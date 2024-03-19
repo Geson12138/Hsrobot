@@ -27,15 +27,14 @@ r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
 print(f'机器人当前TCP位姿为(in degree): [{ r_tcp_pos[0], r_tcp_pos[1], r_tcp_pos[2],r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2]}]\n')
 
 # --------------------------------Sensor----------------------------------
-
-realsenseD435 = RealsenseD435()
-cam_grasp_point = realsenseD435.vision_module_output()
-# print(f'相机坐标系下四个角点的齐次坐标为: {cam_grasp_point}')
-[d_tcp_pos,d_tcp_ori] = hsrobot.get_TCP_targetPose(cam_grasp_point)
-print(f'末端期望pos: {d_tcp_pos}\n 末端期望ori: {d_tcp_ori}')
+# realsenseD435 = RealsenseD435()
+# cam_grasp_point = realsenseD435.vision_module_output()
+# # print(f'相机坐标系下四个角点的齐次坐标为: {cam_grasp_point}')
+# [d_tcp_pos,d_tcp_ori] = hsrobot.get_TCP_targetPose(cam_grasp_point)
+# print(f'末端期望pos: {d_tcp_pos}\n 末端期望ori: {d_tcp_ori}')
 
 # 读取实际力传感器数据
-result = [];hsrobot.arm.HRIF_ReadFTCabData(0,0,result)
+result = []; hsrobot.arm.HRIF_ReadFTCabData(0,0,result)
 r_force_data = np.array([float(i) for i in result[0:6]]) 
 print(f'机器人当前六维力传感器数据为(in N/Nm): [{r_force_data[0], r_force_data[1], r_force_data[2], r_force_data[3], r_force_data[4], r_force_data[5]}]\n')
 
@@ -87,112 +86,28 @@ nIsSeek = 0; nIOBit = 0; nIOState = 0; stdCmdID = "0"
 nRet = cps.HRIF_MoveJ(0,0,tcp_tar_p,RawACSpoints,sTcpName,sUcsName,dVelocity,dAcc,dRadius,nIsUseJoint, nIsSeek, nIOBit, nIOState, stdCmdID)
 '''
 
-'''
-# 连接机器人控制器电箱
-print('开始连接控制器电箱')
-nRet = cps.HRIF_Connect2Box(0) # 连接电箱
-if nRet == 0:
-    print('控制器电箱连接成功')
-else:
-    print('控制器电箱连接失败')
-
-# 机器人上电
-nRet = cps.HRIF_Electrify(0)
-if nRet == 0:
-    print('机器人上电成功')
-else:
-    print('机器人上电失败')
-'''
-
-'''
-# 判断机器人控制器是否启动完成
-# 定义返回值空列表
-result = [ ]
-nRet = cps.HRIF_IsControllerStarted(0, result)
-print(f'Starting Robot Controller: {result[0]}') # 0: 未启动 1: 已启动
-'''
-
-'''
 # 机器人使能
-nRet = cps.HRIF_GrpEnable(0,0)
+nRet = hsrobot.arm.HRIF_GrpEnable(0,0)
 if nRet == 0:
     print('机器人使能成功')
 else:
     print('机器人使能失败')
-    '''
+   
+# 夹具打开
+hsrobot.gripper_open()
+hsrobot.gripper_init()
+time.sleep(10)
+
+hsrobot.gripper_close()
+hsrobot.gripper_init()
+time.sleep(6)   
 
 
-
-
-'''
-测试夹爪, 配置电箱通用数字输出高低电平, 设置0/1两位, 1&0关, 0&1开
-'''
-
-
-'''
-# 夹爪初始化,两位都输出为0: 低电平
-nVal_1 = 0;  nVal_2 = 0# 0: 低电平 1: 高电平
-# 定义需要设置的位
-nBit_1 = 0;  nBit_2 = 7
-# 设置电箱第 nBit 位 DO 状态为 nVal
-nRet = cps.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
-nRet = cps.HRIF_SetBoxDO(0, nBit_2, nVal_2) 
-# 查看电箱对应位电平设置情况
-result = []
-# 读取电箱 nBit 位 DO 状态
-nRet = cps.HRIF_ReadBoxDO(0, nBit_1, result)
-print(f'DO0位电平为: {result[0]}')
-nRet = cps.HRIF_ReadBoxDO(0, nBit_2, result)
-print(f'DO7位电平为: {result[0]}')
-time.sleep(1)
-
-# --------------夹具闭合, 设置DO0电平状态为1---------------
-nVal_1 = 1;  nVal_2 = 0# 0: 低电平 1: 高电平
-# 定义需要设置的位
-nBit_1 = 0;  nBit_2 = 7
-# 设置电箱第 nBit 位 DO 状态为 nVal
-nRet = cps.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
-nRet = cps.HRIF_SetBoxDO(0, nBit_2, nVal_2)
-print('夹具闭合') 
-# 查看电箱对应位电平设置情况
-result = [ ]
-# 读取电箱 nBit 位 DO 状态
-nRet = cps.HRIF_ReadBoxDO (0, nBit_1, result)
-print(f'DO0位电平为: {result[0]}')
-nRet = cps.HRIF_ReadBoxDO (0, nBit_2, result)
-print(f'DO7位电平为: {result[0]}')
-time.sleep(3)
-
-# ----------------夹具松开, 设置DO7电平状态为1----------------
-nVal_1 = 0;  nVal_2 = 1 # 0: 低电平 1: 高电平
-# 定义需要设置的位
-nBit_1 = 0;  nBit_2 = 7
-# 设置电箱第 nBit 位 DO 状态为 nVal
-nRet = cps.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
-nRet = cps.HRIF_SetBoxDO(0, nBit_2, nVal_2) 
-print('夹具打开') 
-# 查看电箱对应位电平设置情况
-result = [ ]
-# 读取电箱 nBit 位 DO 状态
-nRet = cps.HRIF_ReadBoxDO (0, nBit_1, result)
-print(f'DO0位电平为: {result[0]}')
-nRet = cps.HRIF_ReadBoxDO (0, nBit_2, result)
-print(f'DO7位电平为: {result[0]}')
-time.sleep(3)
-
-# 还原电箱通用数字输出状态
-nVal_1 = 0;  nVal_2 = 0# 0: 低电平 1: 高电平
-# 定义需要设置的位
-nBit_1 = 0;  nBit_2 = 7
-# 设置电箱第 nBit 位 DO 状态为 nVal
-nRet = cps.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
-nRet = cps.HRIF_SetBoxDO(0, nBit_2, nVal_2) 
-'''
 
 
 # ------------------------断开连接---------------------
 # 机器人去使能
-# nRet = cps.HRIF_GrpDisable(0,0)
+# nRet = hsrobot.arm.HRIF_GrpDisable(0,0)
 
 '''
 # 机器人断电

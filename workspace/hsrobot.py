@@ -174,12 +174,8 @@ class HSROBOT(object):
         n_x = np.dot(vector_x1, unit_x); n_y = np.dot(vector_x1, unit_y); n_z = np.dot(vector_x1, unit_z)
         o_x = np.dot(vector_y1, unit_x); o_y = np.dot(vector_y1, unit_y); o_z = np.dot(vector_y1, unit_z)
         a_x = np.dot(vector_z1, unit_x); a_y = np.dot(vector_z1, unit_y); a_z = np.dot(vector_z1, unit_z)
-        # print("X 轴上的投影分量:", n_x,o_x,a_x)
-        # print("Y 轴上的投影分量:", n_y,o_y,a_y)
-        # print("Z 轴上的投影分量:", n_z,o_z,a_z)
-        # print(n_x**2+o_x**2+a_x**2)
-        # print(n_y**2+o_y**2+a_y**2)
-        # print(n_z**2+o_z**2+a_z**2)
+        # print("X 轴上的投影分量:", n_x,o_x,a_x); print("Y 轴上的投影分量:", n_y,o_y,a_y); print("Z 轴上的投影分量:", n_z,o_z,a_z)
+        # print(n_x**2+o_x**2+a_x**2); print(n_y**2+o_y**2+a_y**2); print(n_z**2+o_z**2+a_z**2)
 
         target_RotMatrix = np.array(
             [[n_x,o_x,a_x],
@@ -193,3 +189,42 @@ class HSROBOT(object):
         d_tcp_pos = grasp_target_point # 末端的期望位置
         d_tcp_ori = self.rot2euler(target_RotMatrix) # 末端的期望姿态
         return [d_tcp_pos,d_tcp_ori]
+    
+
+    '''
+    Function Group: 控制电动夹爪, 配置电箱通用数字输出DO0 & DO7高低电平, 0低电平 1高电平, 1&0关 0&1开
+    Input:  None
+    Output: None
+    '''
+    def gripper_close(self):
+
+        # --------------夹具闭合, 设置DO0电平状态为1---------------
+        nVal_1 = 1;  nVal_2 = 0 # 0: 低电平 1: 高电平
+        # 定义需要设置的位
+        nBit_1 = 0;  nBit_2 = 7
+        # 设置电箱第 nBit 位 DO 状态为 nVal
+        self.arm.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
+        self.arm.HRIF_SetBoxDO(0, nBit_2, nVal_2)
+        print('夹具闭合') 
+
+    def gripper_open(self):
+
+        # ----------------夹具打开, 设置DO7电平状态为1----------------
+        nVal_1 = 0;  nVal_2 = 1 # 0: 低电平 1: 高电平
+        # 定义需要设置的位
+        nBit_1 = 0;  nBit_2 = 7
+        # 设置电箱第 nBit 位 DO 状态为 nVal
+        self.arm.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
+        self.arm.HRIF_SetBoxDO(0, nBit_2, nVal_2) 
+        print('夹具打开') 
+
+    def gripper_init(self):
+
+        # 夹爪初始化,两位都输出为0: 低电平
+        nVal_1 = 0;  nVal_2 = 0
+        # 定义需要设置的位
+        nBit_1 = 0;  nBit_2 = 7
+        # 设置电箱第 nBit 位 DO 状态为 nVal
+        self.arm.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
+        self.arm.HRIF_SetBoxDO(0, nBit_2, nVal_2) 
+        print('夹具初始化')
