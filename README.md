@@ -1,2 +1,2 @@
 # Hsrobot
-Here are the projects for BQ program
+Here are the programs for the BQ project
