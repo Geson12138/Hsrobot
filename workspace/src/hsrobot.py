@@ -1,23 +1,30 @@
 '''
-Date: 3.14.2024
+Description: Interface functions to hsrobot controller
+Update: 3.20.2024
 Author: Shuai Gan
-Copyright by Casia. Robotic Theory and Application Group
-Description: Interface file with the robot controller
+Mail: shuai.gan@ia.ac.cn
+Copyright by Casia, Robotic Theory and Application Group
 '''
 
 # 导入 Python SDK，需要和CPS.py在同一个文件夹下
-from CPS import CPSClient
+from src.CPS import CPSClient
 import roboticstoolbox as rtb
 import numpy as np
 import math
 import spatialmath.base as spatialmathbase
+import time
+
+# self.trans_cam2wrist = np.array([[ 5.28869282e-02, -9.98584258e-01,  5.69673203e-03,  7.77746026e+01],
+#                                          [ 9.98043816e-01,  5.30470434e-02,  3.30840084e-02, -5.14321849e+01],
+#                                          [-3.33393647e-02,  3.93587660e-03,  9.99436339e-01,  2.76224141e+01],
+#                                          [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
 
 
 class HSROBOT(object):
 
     def __init__(self):
         #------------------------------------开始连接-------------------------------------
-        print('准备工作开始, 连接robot')
+        # print('准备工作开始, 连接robot')
         # 设置机器人的IP 和端口号，注意本机IPv4设置需要和机器人IP在同一个网段
         IP = '192.168.0.10'
         nPort = 10003
@@ -29,10 +36,11 @@ class HSROBOT(object):
         nRet = self.arm.HRIF_IsConnected(0)
         print(f'Connecting to Robot Controller: {nRet}')
         # 相机相对于tcp(第五个关节)的变换矩阵,运行calib/calibration.py得到
-        self.trans_cam2wrist = np.array([[ 5.28869282e-02, -9.98584258e-01,  5.69673203e-03,  7.77746026e+01],
-                                         [ 9.98043816e-01,  5.30470434e-02,  3.30840084e-02, -5.14321849e+01],
-                                         [-3.33393647e-02,  3.93587660e-03,  9.99436339e-01,  2.76224141e+01],
+        self.trans_cam2wrist = np.array([[ 4.79173933e-02, -9.93733916e-01,  1.00979344e-01,  6.89458508e+01],
+                                         [ 9.98850997e-01,  4.77509031e-02, -4.06661492e-03, -4.71596805e+01],
+                                         [-7.80721685e-04,  1.01058180e-01,  9.94880211e-01,  3.61076252e+01],
                                          [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
+        
 
     '''
     Function: 根据RPY角计算旋转矩阵:
@@ -186,9 +194,9 @@ class HSROBOT(object):
         temp_RT = np.ones(4)
         temp_RT[0:3] = cam_center_point.T
         grasp_target_point = trans_wrist2base @ self.trans_cam2wrist @ temp_RT 
-        d_tcp_pos = grasp_target_point # 末端的期望位置
+        d_tcp_pos = grasp_target_point[0:3] # 末端的期望位置
         d_tcp_ori = self.rot2euler(target_RotMatrix) # 末端的期望姿态
-        return [d_tcp_pos,d_tcp_ori]
+        return d_tcp_pos,d_tcp_ori
     
 
     '''
@@ -228,3 +236,71 @@ class HSROBOT(object):
         self.arm.HRIF_SetBoxDO(0, nBit_1, nVal_1)   
         self.arm.HRIF_SetBoxDO(0, nBit_2, nVal_2) 
         print('夹具初始化')
+
+    '''
+    Function: 机器人关节空间运动，增加了判断是否运动完成
+    Input: 关节空间目标位置, 关节运动速度 0~100
+    Output: None
+    '''
+    def move_j(self,joint_pos,vel): 
+
+        # -------------------------------预定义参数--------------------------------
+        self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
+        # 定义笛卡尔空间目标位置
+        tcp_pose = np.array([0,0,0,0,0,0])
+        # 定义工具坐标变量：目标空间坐标所处工具坐标系，与示教器页面的名称对应，nIsUseJoint=1 时无效，可使用默认名称"TCP"
+        sTcpName = "TCP_grasp"
+        # 定义用户坐标变量：目标空间坐标所处用户坐标系，与示教器页面的名称对应, nIsUseJoint=1 时无效，可使用默认名称"Base"
+        sUcsName = "Base"
+        # 关节角度最大运动速度 单位[°/s]
+        dVelocity = 30  
+        # 关节角度最大运动加速度单位[°/s^2]
+        dAcc = 20
+        dRadius = 5 # 定义过渡半径: 过渡半径，单位[mm]
+        nIsUseJoint= 1 # 定义是否使用关节角度: 是否使用关节角度作为目标点，1 使用 0 不使用
+        # 定义是否使用检测 DI 停止: 如果 nIsSeek 为 1，则开启检测 DI 停止，路点运动过程中如果电箱的 nIOBit 位索引的DI 的状态=nIOState 时，机器人停止运动，否则运动到目标点完成运动
+        nIsSeek = 0
+        # 定义检测的 DI 索引: 电箱对应 DI 索引，nIsSeek=0 时无效
+        nIOBit = 0
+        # 定义检测的 DI 状态: 检测的 DI 状态，，nIsSeek=0 时无效
+        nIOState = 0
+        # 定义路点 ID: 当前路点 ID，可以自定义，也可以按顺序设置为"1"，"2"，"3"
+        stdCmdID = "0"
+        self.arm.HRIF_MoveJ(0,0,tcp_pose,joint_pos,sTcpName,sUcsName,dVelocity,dAcc,dRadius,nIsUseJoint, nIsSeek, nIOBit, nIOState, stdCmdID)
+        result = []
+        self.arm.waitMovementDone(0,0,result) # 等待运动完成
+
+    '''
+    Function: 机器人笛卡尔空间直线运动，增加了判断是否运动完成
+    Input: 笛卡尔空间目标位姿, 笛卡尔空间运动速度 0~100
+    Output: None
+    '''
+    def move_l(self,d_tcp_pose,vel):
+
+        # -------------------------------预定义参数--------------------------------    
+        self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
+        # 定义关节空间目标位置
+        RawACSpoints = [ 0, 0, 90, 0, 90, 0]
+        # 定义工具坐标变量
+        sTcpName = "TCP_grasp"
+        # 定义用户坐标变量
+        sUcsName = "Base"
+        # 笛卡尔空间运动最大速度, 单位[mm/s], [°/s]
+        dVelocity = 50
+        # 笛卡尔空间运动最大加速度，单位[mm/s^2], [°/s^2]
+        dAcc = 50
+        # 定义过渡半径
+        dRadius = 5
+        # 定义是否使用检测 DI 停止
+        nIsSeek = 0
+        # 定义检测的 DI 索引
+        nIOBit = 0
+        # 定义检测的 DI 状态
+        nIOState = 0
+        # 定义路点 ID
+        strCmdID = "0"
+        # 执行路点运动
+        nRet = self.arm.HRIF_MoveL(0,0, d_tcp_pose, RawACSpoints, sTcpName, sUcsName, dVelocity, dAcc, dRadius,nIsSeek,nIOBit, nIOState, strCmdID)
+        result = []
+        self.arm.waitMovementDone(0,0,result) # 等待运动完成
+

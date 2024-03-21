@@ -1,10 +1,11 @@
 '''
-Date: 3.14.2024
-Author: Shuai Gan
-Copyright by Casia. Robotic Theory and Application Group
 Description: Perception Module
              Input: image
              Output: coordinates of corner points in camera coordinate system
+Update: 3.20.2024
+Author: Shuai Gan
+Mail: shuai.gan@ia.ac.cn
+Copyright by Casia, Robotic Theory and Application Group
 '''
 
 import sys
@@ -26,14 +27,12 @@ from cv_bridge import CvBridge
 from std_msgs.msg import Float32
 
 
-
-class RealsenseD435(object):
-
+class RealsenseD435i(object):
 
     def __init__(self):
         self.im_height = 480
         self.im_width = 640
-        self.model = YOLO('./models/train5/weights/best.pt')
+        self.model = YOLO('./models/train7/weights/best.pt')
 
     def get_data(self):
         # Return color image and depth image
@@ -87,7 +86,7 @@ class RealsenseD435(object):
                 if not self.aligned_depth_frame or not color_frame:
                     continue
                 
-                #### 获取相机参数 ####
+                # 获取相机参数 
                 self.depth_intrin = self.aligned_depth_frame.profile.as_video_stream_profile().intrinsics  # 获取深度参数（像素坐标系转相机坐标系会用到）
                 # print(self.depth_intrin)
                 self.depth_image = np.asanyarray(self.aligned_depth_frame.get_data())
@@ -214,7 +213,7 @@ class RealsenseD435(object):
             self.get_image_frome_ros() # 先获取图像数据
             # self.get_data()
             pixel_grasp_point = self.pose_model_output() # 角点像素坐标
-            pixel_depth_point = np.array([self.depth_image[row[1]-1,row[0]-1] for row in pixel_grasp_point]) # 获取角点像素对应的深度 单位:mm  
+            pixel_depth_point = np.array([self.depth_image[row[1],row[0]] for row in pixel_grasp_point]) # 获取角点像素对应的深度 单位:mm  
             cam_grasp_point = np.ones((3,4))
 
             for i in range(4):
@@ -222,20 +221,20 @@ class RealsenseD435(object):
 
             if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
                 print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
-                # break
-
-            # 测试视觉模型效果使用
-            end_time = time.time()
-            if end_time - start_time >= 100:
                 break
+
+            # # 测试视觉模型效果使用, 用主函数时注释 
+            # end_time = time.time()
+            # if end_time - start_time >= 100:
+            #     break
 
         print('感认知：角点输出正常')
         return cam_grasp_point
 
        
-# 测试视觉模型效果使用      
-if __name__=='__main__':
+# 测试视觉模型效果使用, 用主函数时注释    
+# if __name__=='__main__':
 
-    realsenseD435 = RealsenseD435()
-    cam_grasp_point = realsenseD435.vision_module_output()
-    realsenseD435.get_image_frome_ros()
+#     realsenseD435 = RealsenseD435()
+#     cam_grasp_point = realsenseD435.vision_module_output()
+#     realsenseD435.get_image_frome_ros()
