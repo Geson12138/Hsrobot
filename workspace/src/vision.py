@@ -130,7 +130,7 @@ class RealsenseD435i(object):
             color_img = rospy.wait_for_message("/camera/color/image_raw", Image, timeout=None)
             depth_img = rospy.wait_for_message("/camera/aligned_depth_to_color/image_raw", Image, timeout=None)
             time_count = time_count +1
-            if time_count>= 20:
+            if time_count>= 10:
                 break
 
         self.color_image = self.bridge.imgmsg_to_cv2(color_img, 'bgr8')
@@ -176,14 +176,14 @@ class RealsenseD435i(object):
                 m = torch.squeeze(keypoint.xy.data)
 
                 point = np.array([int(m[0][0]), int(m[0][1]), int(m[1][0]), int(m[1][1]),int(m[2][0]), int(m[2][1]),int(m[3][0]), int(m[3][1])])
-                cv2.circle(self.color_image, (point[0], point[1]), 2, (0, 255, 0), 2) # 绿色 
-                cv2.circle(self.color_image, (point[2], point[3]), 2, (0, 0, 255), 2) # 红色 
-                cv2.circle(self.color_image, (point[4], point[5]), 2, (255, 0, 0), 2) # 蓝色 
-                cv2.circle(self.color_image, (point[6], point[7]), 2, (255, 255, 0), 2) # 青色 
+                cv2.circle(self.color_image, (point[0], point[1]), 1, (0, 255, 0), -1) # 绿色 
+                cv2.circle(self.color_image, (point[2], point[3]), 1, (0, 0, 255), -1) # 红色 
+                cv2.circle(self.color_image, (point[4], point[5]), 1, (255, 0, 0), -1) # 蓝色 
+                cv2.circle(self.color_image, (point[6], point[7]), 1, (255, 255, 0), -1) # 青色 
                 grasp_point = np.array([[point[0], point[1]],[point[2],point[3]],[point[4],point[5]],[point[6],point[7]]])     
                 [x,y] = np.mean(grasp_point,axis=0)
                 x = int(x);y = int(y)
-                cv2.circle(self.color_image, (x, y), 2, [255, 255, 255], thickness=-1) # 白色
+                cv2.circle(self.color_image, (x, y), 1, [255, 255, 255], thickness=-1) # 白色
 
         # 保存图像为 'grasp_point.jpg'，质量为96%的JPEG格式  
         cv2.imwrite('save_images/grasp_point.jpg', self.color_image, [int(cv2.IMWRITE_JPEG_QUALITY), 96])    
@@ -207,7 +207,8 @@ class RealsenseD435i(object):
         intrin.ppy = 253.232
 
         start_time = time.time()
-
+        sum_cam_grasp_point = np.zeros((3,4))
+        count = 0
         while True:
 
             self.get_image_frome_ros() # 先获取图像数据
@@ -220,21 +221,29 @@ class RealsenseD435i(object):
                 cam_grasp_point[:,i] = np.array(rs.rs2_deproject_pixel_to_point(intrin, pixel_grasp_point[i,:], pixel_depth_point[i])).T
 
             if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
-                print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
-                break
+                # print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
+                sum_cam_grasp_point +=  cam_grasp_point
+                count = count + 1
 
-            # # 测试视觉模型效果使用, 用主函数时注释 
-            # end_time = time.time()
+            if count == 30:
+                end_time = time.time()
+                print(f'感知模块运行时间为: {end_time - start_time} s')
+                cam_grasp_point = sum_cam_grasp_point / count
+                print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
+                break         
+
+            # 测试视觉模型效果使用, 用主函数时注释 
             # if end_time - start_time >= 100:
             #     break
+
 
         print('感认知：角点输出正常')
         return cam_grasp_point
 
        
-# 测试视觉模型效果使用, 用主函数时注释    
+# # 测试视觉模型效果使用, 用主函数时注释    
 # if __name__=='__main__':
 
-#     realsenseD435 = RealsenseD435()
+#     realsenseD435 = RealsenseD435i()
 #     cam_grasp_point = realsenseD435.vision_module_output()
 #     realsenseD435.get_image_frome_ros()

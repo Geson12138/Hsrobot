@@ -51,36 +51,36 @@ def myRPY2R_robot(x, y, z):
 # print("欧拉角:", euler_angles[0], euler_angles[1], euler_angles[2])
 
 # 根据旋转矩阵反解得到欧拉角
-def isRotationMatrix(R):
-    Rt = np.transpose(R)
-    shouldBeIdentity = np.dot(Rt, R)
-    I = np.identity(3, dtype=R.dtype)
-    n = np.linalg.norm(I - shouldBeIdentity)
-    return n < 1e-6
+# def isRotationMatrix(R):
+#     Rt = np.transpose(R)
+#     shouldBeIdentity = np.dot(Rt, R)
+#     I = np.identity(3, dtype=R.dtype)
+#     n = np.linalg.norm(I - shouldBeIdentity)
+#     return n < 1e-6
  
-def rot2euler(R):
-    assert (isRotationMatrix(R))
-    sy = sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-    singular = sy < 1e-6
-    if not singular:
-        x = atan2(R[2, 1], R[2, 2]) * 180 / pi
-        y = atan2(-R[2, 0], sy) * 180 / pi
-        z = atan2(R[1, 0], R[0, 0]) * 180 / pi
-    else:
-        x = atan2(-R[1, 2], R[1, 1]) * 180 / pi
-        y = atan2(-R[2, 0], sy) * 180 / pi
-        z = 0
-    return np.array([x, y, z])
+# def rot2euler(R):
+#     assert (isRotationMatrix(R))
+#     sy = sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+#     singular = sy < 1e-6
+#     if not singular:
+#         x = atan2(R[2, 1], R[2, 2]) * 180 / pi
+#         y = atan2(-R[2, 0], sy) * 180 / pi
+#         z = atan2(R[1, 0], R[0, 0]) * 180 / pi
+#     else:
+#         x = atan2(-R[1, 2], R[1, 1]) * 180 / pi
+#         y = atan2(-R[2, 0], sy) * 180 / pi
+#         z = 0
+#     return np.array([x, y, z])
 
 
-trans_cam2tcp = np.array([[ 0.0366,  0.83415,  -0.55031],
-                          [ 0.00469, 0.55053,   0.83479],
-                          [  0.9996,  -0.033,  0.0162],
-                          ])
+# trans_cam2tcp = np.array([[ 0.0366,  0.83415,  -0.55031],
+#                           [ 0.00469, 0.55053,   0.83479],
+#                           [  0.9996,  -0.033,  0.0162],
+#                           ])
                           
-trans_cam2tcp = np.array([[ 0.67645706,  0.4732541 , -0.56430169],
-                           [-0.37851765,  0.88067755 , 0.2848358 ],
-                           [ 0.63176754 , 0.02091896  ,0.77487558]])
+# trans_cam2tcp = np.array([[ 0.67645706,  0.4732541 , -0.56430169],
+#                            [-0.37851765,  0.88067755 , 0.2848358 ],
+#                            [ 0.63176754 , 0.02091896  ,0.77487558]])
 # print(trans_cam2tcp)
 # euler = rot2euler(trans_cam2tcp)
 # print(euler)
@@ -89,10 +89,10 @@ trans_cam2tcp = np.array([[ 0.67645706,  0.4732541 , -0.56430169],
 # The first character is ‘r’ (rotating == intrinsic), or ‘s’ (static == extrinsic). 
 # euler_angles = tf.euler.mat2euler(trans_cam2tcp,'sxyz')
 # 使用rad2deg函数将弧度转换为角度  
-euler_angles = [-1.6700528491256965, -0.9978933221161231, -1.4672109925745795]
-euler_degrees = np.rad2deg(euler_angles)  
-print("欧拉角（弧度）:", euler_angles)  
-print("欧拉角（角度）:", euler_degrees) 
+# euler_angles = [-1.6700528491256965, -0.9978933221161231, -1.4672109925745795]
+# euler_degrees = np.rad2deg(euler_angles)  
+# print("欧拉角（弧度）:", euler_angles)  
+# print("欧拉角（角度）:", euler_degrees) 
 
 # R = np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]])
 # # print(R)
@@ -100,8 +100,16 @@ print("欧拉角（角度）:", euler_degrees)
 # print(X,Y,Z)
 
 
-rorate_matrix = myRPY2R_robot(0/180*pi,-90/180*pi,-10/180*pi)
+# rorate_matrix = myRPY2R_robot(0/180*pi,-90/180*pi,-10/180*pi)
 # print(rorate_matrix)
 
-a = [1.3990, 0.9690, 1.4190]
+# a = [1.3990, 0.9690, 1.4190]
 # print(ai/pi*180 for ai in a)
+
+
+aa = np.array( [[    -82.905,     -82.027,     -62.731,     -64.161],
+                [     44.063,      35.901,      37.838,      46.328],
+                [        413,         466,         471,         415]], dtype=np.float64)
+bb = np.array( [[    -82.025,     -84.749,     -63.776,     -63.171],
+                [     43.957,      36.748,      37.219,      46.104],
+                [        412,         477,         473,         413]], dtype=np.float64)
