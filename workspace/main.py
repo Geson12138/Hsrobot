@@ -14,7 +14,7 @@ from src.hsrobot import HSROBOT as hs_robot_arm
 
 # -------------------------------连接机器人--------------------------------
 hsrobot = hs_robot_arm()
-hsrobot.arm.HRIF_GrpEnable(0,0) # 机器人使能
+# hsrobot.arm.HRIF_GrpEnable(0,0) # 机器人使能
 
 '''
 prefix description: i_ for initial; r_ for real; d_ for desired; f_ for fix
@@ -22,21 +22,21 @@ prefix description: i_ for initial; r_ for real; d_ for desired; f_ for fix
 # ----------------------------- 运动到初始位姿-------------------------------
 i_tcp_pose = np.array([-687,-11,333,-180,0,90]) # 偏航 俯仰 翻滚
 # 定义笛卡尔空间目标初始位置
-hsrobot.move_l(i_tcp_pose,30)
+# hsrobot.move_l(i_tcp_pose,30)
 
 # 定义关节目标空间初始位置
 i_joint_pos = np.array([0.757, -0.407, -147.771, -0.033, 39.295, 13.386])
-hsrobot.move_j(i_joint_pos,10)
+# hsrobot.move_j(i_joint_pos,10)
 
 # ----------------------------- 获取机器人状态-------------------------------
 # 读取实际关节位置变量
 r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
 r_joint_pos = np.array([float(i) for i in r_poselist[0:6]])
-print(f'机器人当前各关节位置(in degree): { [r_joint_pos[0], r_joint_pos[1], r_joint_pos[2], r_joint_pos[3], r_joint_pos[4], r_joint_pos[5]]}\n')
+# print(f'机器人当前各关节位置(in degree): { [r_joint_pos[0], r_joint_pos[1], r_joint_pos[2], r_joint_pos[3], r_joint_pos[4], r_joint_pos[5]]}\n')
 # 读取实际笛卡尔空间位置变量
 r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
 r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
-print(f'机器人当前TCP位姿为(in mm/degree): { [r_tcp_pos[0], r_tcp_pos[1], r_tcp_pos[2],r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2]]}\n')
+# print(f'机器人当前TCP位姿为(in mm/degree): { [r_tcp_pos[0], r_tcp_pos[1], r_tcp_pos[2],r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2]]}\n')
 
 # --------------------------------Sensor----------------------------------
 # 期望的位姿 -786 -112 237 -173/173 4.46 76 
@@ -51,14 +51,14 @@ if d_tcp_pose[3] > 0:
     d_tcp_pose[3] = - d_tcp_pose[3]
 f_tcp_pose = np.array([-45, 17, 10, -1, -d_tcp_pose[4], 30])
 d_tcp_pose = d_tcp_pose + f_tcp_pose
-print(f'末端期望位姿: {d_tcp_pose}\n')
+# print(f'末端期望位姿: {d_tcp_pose}\n')
 
 # ----------------------------- 机器人运动到期望位姿--------------------------
-d_tcp_pose[0:3] = d_tcp_pose[0:3] + np.array([100, 100, 100])
-hsrobot.move_l(d_tcp_pose,30)
+# d_tcp_pose[0:3] = d_tcp_pose[0:3] + np.array([100, 100, 100])
+# hsrobot.move_l(d_tcp_pose,30)
 
-d_tcp_pose[0:3] = d_tcp_pose[0:3] - np.array([100, 100, 50])
-hsrobot.move_l(d_tcp_pose,30)
+# d_tcp_pose[0:3] = d_tcp_pose[0:3] - np.array([100, 100, 50])
+# hsrobot.move_l(d_tcp_pose,30)
 
 # 读取实际力传感器数据
 # result = []; hsrobot.arm.HRIF_ReadFTCabData(0,0,result)

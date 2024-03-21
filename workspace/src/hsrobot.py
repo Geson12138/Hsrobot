@@ -143,8 +143,8 @@ class HSROBOT(object):
         temp_r = temp_T.A[:3,:3];temp_t = temp_T.A[:3,3]*1000
         euler_angles = spatialmathbase.tr2rpy(temp_r)  
         # print("欧拉角:", np.degrees(euler_angles[0]), np.degrees(euler_angles[1]), np.degrees(euler_angles[2]))
-        temp_r1 = self.RPY2RotMatrix(euler_angles[0],euler_angles[1],euler_angles[2])
-        temp_rt = np.column_stack([temp_r1, temp_t])  # 列合并
+        # temp_r1 = self.RPY2RotMatrix(euler_angles[0],euler_angles[1],euler_angles[2])
+        temp_rt = np.column_stack([temp_r, temp_t])  # 列合并
         trans_wrist2base = np.row_stack((temp_rt, np.array([0,0,0,1]))) # 行合并
         return trans_wrist2base
 
@@ -168,36 +168,40 @@ class HSROBOT(object):
         plug_yaxis_vec = np.cross(plug_zaxis_vec,plug_xaxis_vec)
         plug_yaxis_vec = plug_yaxis_vec / np.linalg.norm(plug_yaxis_vec) # 归一化，相机坐标系下的插头y轴的单位方向向量
 
-        RT = np.zeros((4,3)) # 向量表示为齐次坐标形式
-        RT[0:3,0] = plug_xaxis_vec; RT[0:3,1] = plug_yaxis_vec; RT[0:3,2] = plug_zaxis_vec
+        RT = np.zeros((4,4)) # 向量表示为齐次坐标形式
+        RT[0:3,0] = plug_xaxis_vec; RT[0:3,1] = plug_yaxis_vec; RT[0:3,2] = plug_zaxis_vec; RT[0:3,3] = cam_center_point.T; RT[3,3] = 1
         # 得到腕关节到基座的变换矩阵
         trans_wrist2base = self.get_T_wrist2base()
+        grasp_target_pose = trans_wrist2base @ self.trans_cam2wrist @ RT
+
+
         # print(f'腕关节到基座的变换矩阵为: {trans_wrist2base}')
-        base_axis = trans_wrist2base @ self.trans_cam2wrist @ RT # 将表示相机坐标系的坐标轴单位方向向量转换到机器人坐标系下
+        # base_axis = trans_wrist2base @ self.trans_cam2wrist @ RT # 将表示相机坐标系的坐标轴单位方向向量转换到机器人坐标系下
         # print(base_axis)
-        vector_x1 = base_axis[0:3,0].T; vector_y1 = base_axis[0:3,1].T; vector_z1 = base_axis[0:3,2].T
+        # vector_x1 = base_axis[0:3,0].T; vector_y1 = base_axis[0:3,1].T; vector_z1 = base_axis[0:3,2].T
         # 单位向量，表示坐标轴方向
-        unit_x = np.array([1.0, 0.0, 0.0]); unit_y = np.array([0.0, 1.0, 0.0]); unit_z = np.array([0.0, 0.0, 1.0])
+        # unit_x = np.array([1.0, 0.0, 0.0]); unit_y = np.array([0.0, 1.0, 0.0]); unit_z = np.array([0.0, 0.0, 1.0])
         # 计算投影分量
-        n_x = np.dot(vector_x1, unit_x); n_y = np.dot(vector_x1, unit_y); n_z = np.dot(vector_x1, unit_z)
-        o_x = np.dot(vector_y1, unit_x); o_y = np.dot(vector_y1, unit_y); o_z = np.dot(vector_y1, unit_z)
-        a_x = np.dot(vector_z1, unit_x); a_y = np.dot(vector_z1, unit_y); a_z = np.dot(vector_z1, unit_z)
+        # n_x = np.dot(vector_x1, unit_x); n_y = np.dot(vector_x1, unit_y); n_z = np.dot(vector_x1, unit_z)
+        # o_x = np.dot(vector_y1, unit_x); o_y = np.dot(vector_y1, unit_y); o_z = np.dot(vector_y1, unit_z)
+        # a_x = np.dot(vector_z1, unit_x); a_y = np.dot(vector_z1, unit_y); a_z = np.dot(vector_z1, unit_z)
         # print("X 轴上的投影分量:", n_x,o_x,a_x); print("Y 轴上的投影分量:", n_y,o_y,a_y); print("Z 轴上的投影分量:", n_z,o_z,a_z)
         # print(n_x**2+o_x**2+a_x**2); print(n_y**2+o_y**2+a_y**2); print(n_z**2+o_z**2+a_z**2)
+        # target_RotMatrix = np.array(
+        #     [[n_x,o_x,a_x],
+        #     [n_y,o_y,a_y],
+        #     [n_z,o_z,a_z]
+        #     ])
 
-        target_RotMatrix = np.array(
-            [[n_x,o_x,a_x],
-            [n_y,o_y,a_y],
-            [n_z,o_z,a_z]
-            ])
-
-        temp_RT = np.ones(4)
-        temp_RT[0:3] = cam_center_point.T
-        grasp_target_point = trans_wrist2base @ self.trans_cam2wrist @ temp_RT 
-        d_tcp_pos = grasp_target_point[0:3] # 末端的期望位置
-        d_tcp_ori = self.rot2euler(target_RotMatrix) # 末端的期望姿态
+        # temp_RT = np.ones(4)
+        # temp_RT[0:3] = cam_center_point.T
+        # grasp_target_point = trans_wrist2base @ self.trans_cam2wrist @ temp_RT 
+        d_tcp_pos = grasp_target_pose[0:3,3] # 末端的期望位置
+        d_tcp_ori = self.rot2euler(grasp_target_pose[0:3,0:3]) # 末端的期望姿态
         return d_tcp_pos,d_tcp_ori
     
+
+
 
     '''
     Function Group: 控制电动夹爪, 配置电箱通用数字输出DO0 & DO7高低电平, 0低电平 1高电平, 1&0关 0&1开
