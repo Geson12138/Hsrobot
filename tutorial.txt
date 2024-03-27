@@ -1,0 +1,11 @@
+通过Ros启动相机节点, 并用rqt_image_view查看图像
+1、环境配置
+(1)安装 librealsense2 https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md
+(2)安装 realsense2-ros https://github.com/IntelRealSense/realsense-ros/tree/ros1-legacy?tab=readme-ov-file
+2、启动相机节点
+# new terminal
+roscore
+# new terminal
+roslaunch realsense2_camera rs_camera.launch align_depth:=true color_width:=640 color_height:=480 color_fps:=30 depth_width:=640 depth_height:=480 depth_fps:=30
+# new terminal
+rqt
