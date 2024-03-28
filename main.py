@@ -55,17 +55,20 @@ d_tcp_pose = d_tcp_pose + f_tcp_pose
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
 # ----------------------------- 机器人运动到期望位姿--------------------------
-d_tcp_pose_1 = d_tcp_pose
+d_tcp_pose_1 = d_tcp_pose.copy() # 创建一个副本，并不是直接引用, 如果直接等于就是引用，指向同一个数组对象
 d_tcp_pose_1[0:3] = d_tcp_pose_1[0:3] + np.array([100, 100, 100])
+print('期望位姿: ',d_tcp_pose_1)
 hsrobot.move_l(d_tcp_pose_1,30)
 
-d_tcp_pose_2 = d_tcp_pose
+d_tcp_pose_2 = d_tcp_pose.copy()
 d_tcp_pose_2[0:3] = d_tcp_pose_2[0:3] + np.array([100, 0, 50])
+print('期望位姿: ',d_tcp_pose_2)
 hsrobot.move_l(d_tcp_pose_2,30)
 
-d_tcp_pose_3 = d_tcp_pose
+d_tcp_pose_3 = d_tcp_pose.copy()
 d_tcp_pose_3[0:3] = d_tcp_pose_3[0:3] + np.array([0, 0, 50])
-hsrobot.move_l(d_tcp_pose_3,30)
+print('期望位姿: ',d_tcp_pose_3)
+# hsrobot.move_l(d_tcp_pose_3,30)
 
 # 读取实际力传感器数据
 # result = []; hsrobot.arm.HRIF_ReadFTCabData(0,0,result)

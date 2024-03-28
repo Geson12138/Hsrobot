@@ -219,13 +219,14 @@ class RealsenseD435i(object):
 
             for i in range(4):
                 cam_grasp_point[:,i] = np.array(rs.rs2_deproject_pixel_to_point(intrin, pixel_grasp_point[i,:], pixel_depth_point[i])).T
+               
+            print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
 
             if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
-                # print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
                 sum_cam_grasp_point +=  cam_grasp_point
                 count = count + 1
 
-            if count == 30:
+            if count == 20:
                 end_time = time.time()
                 print(f'感知模块运行时间为: {end_time - start_time} s')
                 cam_grasp_point = sum_cam_grasp_point / count

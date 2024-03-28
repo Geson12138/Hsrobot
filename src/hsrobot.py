@@ -135,7 +135,7 @@ class HSROBOT(object):
                             rtb.RevoluteDH(alpha=np.pi/2),
                             rtb.RevoluteDH(d=0.52, alpha=-np.pi/2),
                             rtb.RevoluteDH(alpha=np.pi/2)
-                            ], name="hsrobot")
+                            ], name="hsrobot")#rtb.RevoluteDH(d=0.192)第六关节
         q_init = np.array([0,np.pi/2,np.pi/2,0,0])
         q_cur = c_joint_pos[0:5]/180*np.pi # 机器人前五个关节位置
         q = np.add(q_init,q_cur)
