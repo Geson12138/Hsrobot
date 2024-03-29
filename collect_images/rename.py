@@ -6,7 +6,7 @@ def rename_images_in_folder(folder_path, new_name_prefix):
     files = os.listdir(folder_path)
     
     # 遍历所有文件
-    for i, file in enumerate(files, start=986):
+    for i, file in enumerate(files, start=1):
         # 构造新的文件名
         new_name = f"{new_name_prefix}_{i}.jpg"
         
@@ -20,4 +20,4 @@ def rename_images_in_folder(folder_path, new_name_prefix):
         shutil.move(old_file_path, new_file_path)
 
 # 使用函数
-rename_images_in_folder('./cable_0317', 'cable_image')
+rename_images_in_folder('/home/hsrobot/datasets/cable0329', 'cable_img')

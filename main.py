@@ -23,7 +23,7 @@ prefix description: i_ for initial; r_ for real; d_ for desired; f_ for fix
 # ----------------------------- 运动到初始位姿-------------------------------
 i_tcp_pose = np.array([-687,-11,333,-180,0,90]) # 偏航 俯仰 翻滚
 # 定义笛卡尔空间目标初始位置
-hsrobot.move_l(i_tcp_pose,30)
+hsrobot.move_l(i_tcp_pose,40)
 
 # 定义关节目标空间初始位置
 i_joint_pos = np.array([0.757, -0.407, -147.771, -0.033, 39.295, 13.386])
@@ -39,7 +39,7 @@ hsrobot.move_j(i_joint_pos,10)
 # r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
 # print(f'机器人当前TCP位姿为(in mm/degree): { [r_tcp_pos[0], r_tcp_pos[1], r_tcp_pos[2],r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2]]}\n')
 
-# --------------------------------Sensor----------------------------------
+# -----------------------------Vision Sensor--------------------------------
 #末端期望位姿: [    -759.45     -147.99      220.68      176.96    -0.55953      86.173]
 realsenseD435i = RealsenseD435i()
 cam_grasp_point = realsenseD435i.vision_module_output()
@@ -50,7 +50,7 @@ print(f'末端期望位姿: {d_tcp_pose}\n')
 
 if d_tcp_pose[3] > 0:
     d_tcp_pose[3] = - d_tcp_pose[3]
-f_tcp_pose = np.array([-40, 17, 50, 0, 0, 0])
+f_tcp_pose = np.array([-30, 17, 20, 0, 0, 0])
 d_tcp_pose = d_tcp_pose + f_tcp_pose
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
@@ -58,12 +58,12 @@ print(f'末端期望位姿: {d_tcp_pose}\n')
 d_tcp_pose_1 = d_tcp_pose.copy() # 创建一个副本，并不是直接引用, 如果直接等于就是引用，指向同一个数组对象
 d_tcp_pose_1[0:3] = d_tcp_pose_1[0:3] + np.array([100, 100, 100])
 print('期望位姿: ',d_tcp_pose_1)
-hsrobot.move_l(d_tcp_pose_1,30)
+# hsrobot.move_l(d_tcp_pose_1,30)
 
 d_tcp_pose_2 = d_tcp_pose.copy()
 d_tcp_pose_2[0:3] = d_tcp_pose_2[0:3] + np.array([100, 0, 50])
 print('期望位姿: ',d_tcp_pose_2)
-hsrobot.move_l(d_tcp_pose_2,30)
+# hsrobot.move_l(d_tcp_pose_2,30)
 
 d_tcp_pose_3 = d_tcp_pose.copy()
 d_tcp_pose_3[0:3] = d_tcp_pose_3[0:3] + np.array([0, 0, 50])
@@ -85,7 +85,6 @@ print('期望位姿: ',d_tcp_pose_3)
 开启力控模式，确保以下步骤已执行：
 (1) 负载辨识，示教器上运行<配置><设置TCP><负载辨识>
 (2) 力传感器标定，按照教程设置八个标定电位
-
 '''
 # 设置力控状态 0：关闭力控 1：开启力控
 # hsrobot.arm.HRIF_SetForceControlState(0,0,1)

@@ -26,13 +26,13 @@ class SaveImageThread(threading.Thread):
     def __init__(self, pipeline):
         super(SaveImageThread, self).__init__()
         self.pipeline = pipeline
-        self.i = 501
+        self.i = 1
 
     def run(self):
 
         time.sleep(1)
         try:
-            while self.i <= 600:
+            while self.i <= 300:
                 frames = self.pipeline.wait_for_frames()
                 color_frame = frames.get_color_frame()
                 if not color_frame:
@@ -41,7 +41,7 @@ class SaveImageThread(threading.Thread):
                 # 显示图片
                 print('save image: {}'.format(self.i))
                 # 保存图片
-                cv2.imwrite('./cable_0317/image_{}.jpg'.format(self.i), color_image)
+                cv2.imwrite('/home/hsrobot/datasets/cable0329/image_{}.jpg'.format(self.i), color_image)
                 self.i += 1
                 time.sleep(0.5)
         finally:

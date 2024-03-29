@@ -32,7 +32,7 @@ class RealsenseD435i(object):
     def __init__(self):
         self.im_height = 480
         self.im_width = 640
-        self.model = YOLO('./models/train7/weights/best.pt')
+        self.model = YOLO('./models/train/weights/best.pt')
 
     def get_data(self):
         # Return color image and depth image
@@ -222,29 +222,30 @@ class RealsenseD435i(object):
                
             print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
 
-            if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
-                sum_cam_grasp_point +=  cam_grasp_point
-                count = count + 1
+            # if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
+            #     sum_cam_grasp_point +=  cam_grasp_point
+            #     count = count + 1
 
-            if count == 20:
-                end_time = time.time()
-                print(f'感知模块运行时间为: {end_time - start_time} s')
-                cam_grasp_point = sum_cam_grasp_point / count
-                print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
-                break         
+            # if count == 20:
+            #     end_time = time.time()
+            #     print(f'感知模块运行时间为: {end_time - start_time} s')
+            #     cam_grasp_point = sum_cam_grasp_point / count
+            #     print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
+                # break         
 
-            # 测试视觉模型效果使用, 用主函数时注释 
-            # if end_time - start_time >= 100:
-            #     break
+            # 测试视觉模型效果使用, python main.py时注释 
+            end_time = time.time()
+            if end_time - start_time >= 100:
+                break
 
 
         print('感认知：角点输出正常')
         return cam_grasp_point
 
        
-# # 测试视觉模型效果使用, 用主函数时注释    
-# if __name__=='__main__':
+# 测试视觉模型效果使用, 用主函数时注释    
+if __name__=='__main__':
 
-#     realsenseD435 = RealsenseD435i()
-#     cam_grasp_point = realsenseD435.vision_module_output()
-#     realsenseD435.get_image_frome_ros()
+    realsenseD435 = RealsenseD435i()
+    cam_grasp_point = realsenseD435.vision_module_output()
+    realsenseD435.get_image_frome_ros()
