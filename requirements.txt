@@ -1,0 +1,12 @@
+cv_bridge==1.16.2
+message_filters==1.16.0
+numpy==1.24.4
+opencv_python==4.9.0.80
+pandas==2.0.3
+pyrealsense2==2.54.2.5684
+roboticstoolbox_python==1.1.0
+rospy==1.16.0
+scipy==1.12.0
+spatialmath_python==1.1.9
+transforms3d==0.4.1
+ultralytics==8.1.34

@@ -1,0 +1,8 @@
+通过Ros启动相机节点, 并用rqt_image_view查看图像
+1、环境配置
+(1)安装 librealsense2 https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md
+(2)安装 realsense2-ros https://github.com/IntelRealSense/realsense-ros/tree/ros1-legacy?tab=readme-ov-file
+2、启动相机节点
+./start_realsense.sh
+3、关闭相机节点
+./stop_realsense.sh
