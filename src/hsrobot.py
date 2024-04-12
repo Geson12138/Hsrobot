@@ -141,7 +141,7 @@ class HSROBOT(object):
         q = np.add(q_init,q_cur)
         temp_T = rtb_hsrobot.fkine(q) #运用机器人工具箱得到第五个关节的位姿矩阵
         temp_r = temp_T.A[:3,:3];temp_t = temp_T.A[:3,3]*1000
-        euler_angles = spatialmathbase.tr2rpy(temp_r)  
+        # euler_angles = spatialmathbase.tr2rpy(temp_r)  
         # print("欧拉角:", np.degrees(euler_angles[0]), np.degrees(euler_angles[1]), np.degrees(euler_angles[2]))
         # temp_r1 = self.RPY2RotMatrix(euler_angles[0],euler_angles[1],euler_angles[2])
         temp_rt = np.column_stack([temp_r, temp_t])  # 列合并
@@ -253,7 +253,7 @@ class HSROBOT(object):
         # 定义笛卡尔空间目标位置
         tcp_pose = np.array([0,0,0,0,0,0])
         # 定义工具坐标变量：目标空间坐标所处工具坐标系，与示教器页面的名称对应，nIsUseJoint=1 时无效，可使用默认名称"TCP"
-        sTcpName = "TCP_grasp"
+        sTcpName = "TCP"
         # 定义用户坐标变量：目标空间坐标所处用户坐标系，与示教器页面的名称对应, nIsUseJoint=1 时无效，可使用默认名称"Base"
         sUcsName = "Base"
         # 关节角度最大运动速度 单位[°/s]
@@ -286,7 +286,7 @@ class HSROBOT(object):
         # 定义关节空间目标位置
         RawACSpoints = [ 0, 0, 90, 0, 90, 0]
         # 定义工具坐标变量
-        sTcpName = "TCP_grasp"
+        sTcpName = "TCP"
         # 定义用户坐标变量
         sUcsName = "Base"
         # 笛卡尔空间运动最大速度, 单位[mm/s], [°/s]

@@ -13,6 +13,7 @@ K=np.array([[606.941,0,316.836],
 chess_board_x_num = 10 #棋盘格x方向格子数
 chess_board_y_num = 7 #棋盘格y方向格子数
 chess_board_len = 20 #单位棋盘格长度,mm
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
 #用于根据欧拉角计算旋转矩阵
@@ -32,7 +33,7 @@ def pose_robot(x, y, z, Tx, Ty, Tz):
     t = np.array([[Tx], [Ty], [Tz]])
     RT1 = np.column_stack([R, t])  # 列合并
     RT1 = np.row_stack((RT1, np.array([0,0,0,1])))
-    # RT1=np.linalg.inv(RT1)
+    # RT1 = np.linalg.inv(RT1)
     return RT1
 
 #用来从棋盘格图片得到相机外参
@@ -50,15 +51,26 @@ def get_RT_from_chessboard(img_path,chess_board_x_num,chess_board_y_num,K,chess_
 
     size = gray.shape[::-1]
     ret, corners = cv2.findChessboardCorners(gray, (chess_board_x_num, chess_board_y_num), cv2.CALIB_CB_EXHAUSTIVE + cv2.CALIB_CB_ACCURACY)
+    # print(corners.shape)
 
-    corner_points=np.zeros((2,corners.shape[0]),dtype=np.float64)
-    for i in range(corners.shape[0]):
-        corner_points[:,i]=corners[i,0,:]
+    corners_refined = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+    # print(corners_refined.shape)
+
+    corner_points=np.zeros((2,corners_refined.shape[0]),dtype=np.float64)
+    for i in range(corners_refined.shape[0]):
+        corner_points[:,i]=corners_refined[i,0,:]
+
+
+    cv2.drawChessboardCorners(img, (chess_board_x_num, chess_board_y_num), corners_refined, ret)
+    cv2.imshow('image', img)
+    cv2.waitKey(100)
+
     object_points=np.zeros((3,chess_board_x_num*chess_board_y_num),dtype=np.float64)
     flag=0
     for i in range(chess_board_y_num):
         for j in range(chess_board_x_num):
             object_points[:2,flag]=np.array([(10-j-1)*chess_board_len,(7-i-1)*chess_board_len])
+            # object_points[:2,flag]=np.array([j*chess_board_len,i*chess_board_len])
             flag+=1
 
     retval,rvec,tvec  = cv2.solvePnP(object_points.T,corner_points.T, K, distCoeffs=None)
@@ -67,7 +79,7 @@ def get_RT_from_chessboard(img_path,chess_board_x_num,chess_board_y_num,K,chess_
     return RT
 
 
-for j in list(range(10, 31)):
+for j in list(range(10,24)):
 
     count = j
 
@@ -76,10 +88,11 @@ for j in list(range(10, 31)):
     T_all_chess_to_cam_1=[]
     for i in list(range(count)):
         image_path='calib_image_'+str(i)+'.jpg'
+        # print(image_path)
         RT=get_RT_from_chessboard(image_path, chess_board_x_num, chess_board_y_num, K, chess_board_len)
 
         R_all_chess_to_cam_1.append(RT[:3,:3])
-        T_all_chess_to_cam_1.append(RT[:3, 3].reshape((3,1)))
+        T_all_chess_to_cam_1.append(RT[:3, 3]) # .reshape((3,1))
 
     #计算end to base变换矩阵
     file_address=r"pose.xlsx"#从记录文件读取机器人六个位姿
@@ -91,9 +104,10 @@ for j in list(range(10, 31)):
         
         RT=pose_robot(sheet_1.iloc[i]['ax'],sheet_1.iloc[i]['ay'],sheet_1.iloc[i]['az'],sheet_1.iloc[i]['dx'],
                                         sheet_1.iloc[i]['dy'],sheet_1.iloc[i]['dz'])
-
+        # print(sheet_1.iloc[i]['ax'],sheet_1.iloc[i]['ay'],sheet_1.iloc[i]['az'],sheet_1.iloc[i]['dx'],
+        #                                 sheet_1.iloc[i]['dy'],sheet_1.iloc[i]['dz'])
         R_all_end_to_base_1.append(RT[:3, :3])
-        T_all_end_to_base_1.append(RT[:3, 3].reshape((3, 1)))
+        T_all_end_to_base_1.append(RT[:3, 3])
 
     R,T=cv2.calibrateHandEye(R_all_end_to_base_1,T_all_end_to_base_1,R_all_chess_to_cam_1,T_all_chess_to_cam_1)#手眼标定
     RT=np.column_stack((R,T))

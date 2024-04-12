@@ -1,0 +1,79 @@
+[31mRLException: roscore cannot run as another roscore/master is already running. 
+Please kill other roscore/master processes before relaunching.
+The ROS_MASTER_URI is http://hsrobot-controlpc:11311/[0m
+[31mThe traceback for the exception was written to the log file[0m
+... logging to /home/hsrobot/.ros/log/a3b45070-f01f-11ee-ad59-e33591da2c88/roslaunch-hsrobot-controlpc-410692.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;roscore
+[1mstarted roslaunch server http://hsrobot-controlpc:39383/[0m
+ros_comm version 1.16.0
+
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: noetic
+ * /rosversion: 1.16.0
+
+NODES
+
+[31mRLException: roscore cannot run as another roscore/master is already running. 
+Please kill other roscore/master processes before relaunching.
+The ROS_MASTER_URI is http://hsrobot-controlpc:11311/[0m
+[31mThe traceback for the exception was written to the log file[0m
+... logging to /home/hsrobot/.ros/log/a3b45070-f01f-11ee-ad59-e33591da2c88/roslaunch-hsrobot-controlpc-410924.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;roscore
+[1mstarted roslaunch server http://hsrobot-controlpc:38081/[0m
+ros_comm version 1.16.0
+
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: noetic
+ * /rosversion: 1.16.0
+
+NODES
+
+[31m================================================================================REQUIRED process [master] has died!
+process has died [pid 284096, exit code -15, cmd rosmaster --core -p 11311 -w 3 __log:=/home/hsrobot/.ros/log/a3b45070-f01f-11ee-ad59-e33591da2c88/master.log].
+log file: /home/hsrobot/.ros/log/a3b45070-f01f-11ee-ad59-e33591da2c88/master*.log
+Initiating shutdown!
+================================================================================[0m
+... logging to /home/hsrobot/.ros/log/a3b45070-f01f-11ee-ad59-e33591da2c88/roslaunch-hsrobot-controlpc-284063.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;roscore
+[1mstarted roslaunch server http://hsrobot-controlpc:35393/[0m
+ros_comm version 1.16.0
+
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: noetic
+ * /rosversion: 1.16.0
+
+NODES
+
+auto-starting new master
+[1mprocess[master]: started with pid [284096][0m
+[1mROS_MASTER_URI=http://hsrobot-controlpc:11311/[0m
+]2;roscore http://hsrobot-controlpc:11311/
+[1msetting /run_id to a3b45070-f01f-11ee-ad59-e33591da2c88[0m
+[1mprocess[rosout-1]: started with pid [284129][0m
+started core service [/rosout]
+[rosout-1] killing on exit
+[master] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m
