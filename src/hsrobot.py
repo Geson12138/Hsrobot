@@ -243,17 +243,15 @@ class HSROBOT(object):
 
     '''
     Function: 机器人关节空间运动，增加了判断是否运动完成
-    Input: 关节空间目标位置, 关节运动速度 0~100
+    Input: 关节空间目标位置, 关节运动速度 0~100, 工具坐标系
     Output: None
     '''
-    def move_j(self,joint_pos,vel): 
+    def move_j(self,joint_pos,vel,sTcpName = "TCP"): 
 
         # -------------------------------预定义参数--------------------------------
         self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
         # 定义笛卡尔空间目标位置
         tcp_pose = np.array([0,0,0,0,0,0])
-        # 定义工具坐标变量：目标空间坐标所处工具坐标系，与示教器页面的名称对应，nIsUseJoint=1 时无效，可使用默认名称"TCP"
-        sTcpName = "TCP"
         # 定义用户坐标变量：目标空间坐标所处用户坐标系，与示教器页面的名称对应, nIsUseJoint=1 时无效，可使用默认名称"Base"
         sUcsName = "Base"
         # 关节角度最大运动速度 单位[°/s]
@@ -276,17 +274,15 @@ class HSROBOT(object):
 
     '''
     Function: 机器人笛卡尔空间直线运动，增加了判断是否运动完成
-    Input: 笛卡尔空间目标位姿, 笛卡尔空间运动速度 0~100
+    Input: 笛卡尔空间目标位姿, 笛卡尔空间运动速度 0~100, 工具坐标系
     Output: None
     '''
-    def move_l(self,d_tcp_pose,vel):
+    def move_l(self,d_tcp_pose,vel,sTcpName = "TCP"):
 
         # -------------------------------预定义参数--------------------------------    
         self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
         # 定义关节空间目标位置
         RawACSpoints = [ 0, 0, 90, 0, 90, 0]
-        # 定义工具坐标变量
-        sTcpName = "TCP"
         # 定义用户坐标变量
         sUcsName = "Base"
         # 笛卡尔空间运动最大速度, 单位[mm/s], [°/s]

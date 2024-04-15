@@ -1,9 +1,9 @@
 '''
 Decription: Welcome, this is the main program to control the robot in BQ project!
-Update: 3.20.2024
+Updated: 4.12.2024
 Author: Shuai Gan
 Mail: shuai.gan@ia.ac.cn
-Copyright by Casia. Robotic Theory and Application Group
+Copyright by CASIA. Robotic Theory and Application Group
 '''
 import time
 import numpy as np
@@ -15,19 +15,19 @@ from src.hsrobot import HSROBOT as hs_robot_arm
 # -------------------------------连接机器人--------------------------------
 hsrobot = hs_robot_arm()
 hsrobot.arm.HRIF_GrpEnable(0,0) # 机器人使能
-time.sleep(5)
+time.sleep(3.5)
 
 '''
-prefix description: i_ for initial; r_ for real; d_ for desired; f_ for fix
+prefix description: i_ for initial; r_ for real; d_ for desired; f_ for fixed
 '''
 # ----------------------------- 运动到初始位姿-------------------------------
 i_tcp_pose = np.array([-687,-11,333,-180,0,90]) # 偏航 俯仰 翻滚
 # 定义笛卡尔空间目标初始位置
-hsrobot.move_l(i_tcp_pose,40)
+hsrobot.move_l(i_tcp_pose,50,sTcpName="TCP_grasp")
 
 # 定义关节目标空间初始位置
 i_joint_pos = np.array([0.757, -0.407, -147.771, -0.033, 39.295, 13.386])
-hsrobot.move_j(i_joint_pos,10)
+hsrobot.move_j(i_joint_pos,15,sTcpName="TCP_grasp")
 
 # ----------------------------- 获取机器人状态-------------------------------
 # 读取实际关节位置变量
@@ -40,7 +40,11 @@ hsrobot.move_j(i_joint_pos,10)
 # print(f'机器人当前TCP位姿为(in mm/degree): { [r_tcp_pos[0], r_tcp_pos[1], r_tcp_pos[2],r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2]]}\n')
 
 # -----------------------------Vision Sensor--------------------------------
-#末端期望位姿: [    -759.45     -147.99      220.68      176.96    -0.55953      86.173]
+#末端期望位姿: [-773.37, -152.216, 240.261, -170.025, 4.34, 94.751]
+# [    -726.18     -171.36      235.54      179.42     0.13332      87.218]
+# [    -721.68     -171.71      234.94     -178.66     -2.8654      75.704]
+# [    -727.65     -172.42      235.82      179.31    -0.74764      83.941]
+
 realsenseD435i = RealsenseD435i()
 cam_grasp_point = realsenseD435i.vision_module_output()
 # print(f'相机坐标系下四个角点的齐次坐标为: {cam_grasp_point}')
@@ -48,27 +52,27 @@ cam_grasp_point = realsenseD435i.vision_module_output()
 d_tcp_pose = np.concatenate((np.array(d_tcp_pos),np.array(d_tcp_ori)))
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
-if d_tcp_pose[3] > 0:
-    d_tcp_pose[3] = - d_tcp_pose[3]
-f_tcp_pose = np.array([-30, 17, 20, 0, 0, 0])
+# if d_tcp_pose[3] > 0:
+#     d_tcp_pose[3] = - d_tcp_pose[3]
+f_tcp_pose = np.array([-27, 24, -47, 7, 0, 18])
 d_tcp_pose = d_tcp_pose + f_tcp_pose
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
-# ----------------------------- 机器人运动到期望位姿--------------------------
+# # ----------------------------- 机器人运动到期望位姿--------------------------
 d_tcp_pose_1 = d_tcp_pose.copy() # 创建一个副本，并不是直接引用, 如果直接等于就是引用，指向同一个数组对象
 d_tcp_pose_1[0:3] = d_tcp_pose_1[0:3] + np.array([100, 100, 100])
 print('期望位姿: ',d_tcp_pose_1)
-# hsrobot.move_l(d_tcp_pose_1,30)
+hsrobot.move_l(d_tcp_pose_1,30,sTcpName="TCP_grasp")
 
 d_tcp_pose_2 = d_tcp_pose.copy()
-d_tcp_pose_2[0:3] = d_tcp_pose_2[0:3] + np.array([100, 0, 50])
+d_tcp_pose_2[0:3] = d_tcp_pose_2[0:3] + np.array([100, 0, 100])
 print('期望位姿: ',d_tcp_pose_2)
-# hsrobot.move_l(d_tcp_pose_2,30)
+hsrobot.move_l(d_tcp_pose_2,30,sTcpName="TCP_grasp")
 
 d_tcp_pose_3 = d_tcp_pose.copy()
-d_tcp_pose_3[0:3] = d_tcp_pose_3[0:3] + np.array([0, 0, 50])
+d_tcp_pose_3[0:3] = d_tcp_pose_3[0:3] + np.array([0, 0, 100])
 print('期望位姿: ',d_tcp_pose_3)
-# hsrobot.move_l(d_tcp_pose_3,30)
+hsrobot.move_l(d_tcp_pose_3,30,sTcpName="TCP_grasp")
 
 # 读取实际力传感器数据
 # result = []; hsrobot.arm.HRIF_ReadFTCabData(0,0,result)
@@ -83,7 +87,7 @@ print('期望位姿: ',d_tcp_pose_3)
 # --------------------------------Control---------------------------------
 '''
 开启力控模式，确保以下步骤已执行：
-(1) 负载辨识，示教器上运行<配置><设置TCP><负载辨识>
+(1) 负载辨识，示教器上运行<配置><设置TCP><负载辨识>, 机械臂开始自动校和，结束后点击<应用>保存生效
 (2) 力传感器标定，按照教程设置八个标定电位
 '''
 # 设置力控状态 0：关闭力控 1：开启力控

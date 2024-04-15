@@ -127,8 +127,8 @@ class RealsenseD435i(object):
         self.image_pub = rospy.Publisher('image_topic', Image, queue_size=10)
 
         while True:
-            color_img = rospy.wait_for_message("/camera/color/image_raw", Image, timeout=None)
-            depth_img = rospy.wait_for_message("/camera/aligned_depth_to_color/image_raw", Image, timeout=None)
+            color_img = rospy.wait_for_message("/hs_camera/color/image_raw", Image, timeout=None)
+            depth_img = rospy.wait_for_message("/hs_camera/aligned_depth_to_color/image_raw", Image, timeout=None)
             time_count = time_count +1
             if time_count>= 10:
                 break
@@ -220,32 +220,33 @@ class RealsenseD435i(object):
             for i in range(4):
                 cam_grasp_point[:,i] = np.array(rs.rs2_deproject_pixel_to_point(intrin, pixel_grasp_point[i,:], pixel_depth_point[i])).T
                
-            print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
+            # print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
 
-            # if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
-            #     sum_cam_grasp_point +=  cam_grasp_point
-            #     count = count + 1
+            # 正常运行main.py时使用，取消下面的注释
+            if cam_grasp_point[2,0] !=0 and cam_grasp_point[2,1] !=0 and cam_grasp_point[2,2] !=0 and cam_grasp_point[2,3] !=0 :
+                sum_cam_grasp_point +=  cam_grasp_point
+                print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
+                count = count + 1
+            if count == 30:
+                end_time = time.time()
+                print(f'感知模块运行时间为: {end_time - start_time} s')
+                cam_grasp_point = sum_cam_grasp_point / count
+                print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
+                break         
 
-            # if count == 20:
-            #     end_time = time.time()
-            #     print(f'感知模块运行时间为: {end_time - start_time} s')
-            #     cam_grasp_point = sum_cam_grasp_point / count
-            #     print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
-                # break         
-
-            # 测试视觉模型效果使用, python main.py时注释 
-            end_time = time.time()
-            if end_time - start_time >= 100:
-                break
+            # 测试视觉模型效果使用, 运行main.py时注释
+            # end_time = time.time()
+            # if end_time - start_time >= 100:
+            #     break
 
 
         print('感认知：角点输出正常')
         return cam_grasp_point
 
        
-# 测试视觉模型效果使用, 用主函数时注释    
-if __name__=='__main__':
+# 测试视觉模型效果使用, 运行main.py时注释    
+# if __name__=='__main__':
 
-    realsenseD435 = RealsenseD435i()
-    cam_grasp_point = realsenseD435.vision_module_output()
-    realsenseD435.get_image_frome_ros()
+#     realsenseD435 = RealsenseD435i()
+#     cam_grasp_point = realsenseD435.vision_module_output()
+#     realsenseD435.get_image_frome_ros()
