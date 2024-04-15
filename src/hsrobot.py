@@ -201,8 +201,6 @@ class HSROBOT(object):
         return d_tcp_pos,d_tcp_ori
     
 
-
-
     '''
     Function Group: 控制电动夹爪, 配置电箱通用数字输出DO0 & DO7高低电平, 0低电平 1高电平, 1&0关 0&1开
     Input:  None
@@ -304,3 +302,35 @@ class HSROBOT(object):
         result = []
         self.arm.waitMovementDone(0,0,result) # 等待运动完成
 
+    '''
+    Function: 机器人笛卡尔空间圆弧轨迹运动，增加了判断是否运动完成
+    Input: 圆弧运动起点、圆弧运动中点、圆弧运动终点, 笛卡尔空间圆弧运动速度 0~100
+    Output: None
+    '''
+    def move_c(self,dStartPoint,dAuxPoint,dEndPoint,vel):
+
+        # -------------------------------预定义参数--------------------------------    
+        self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
+        # 是否固定姿态, 圆弧整个运动过程中是否保持姿态不变：0 固定姿态 1 不固定姿态
+        nFixedPosure = 0
+        # 圆弧类型 0：整圆 1：圆弧段
+        nMoveCType = 1
+        # 整圆圈数，当使用圆弧运动时无效，通过三个点位确定圆弧路径，当使用整圆运动时表示整圆的圈数，小数部分无效。
+        dRadLen = 1
+        # 定义笛卡尔空间运动最大速度, 单位[mm/s], [°/s]
+        dVelocity = 50
+        # 定义笛卡尔空间运动最大加速度，单位[mm/s^2], [°/s^2]
+        dAcc = 50
+        # 定义过渡半径
+        dRadius = 5
+        # 定义工具坐标变量
+        sTcpName = "TCP_grasp"
+        # 定义用户坐标变量
+        sUcsName = "Base"
+        # 定义路点 ID
+        strCmdID = "0"
+        # 执行路点运动
+        self.arm.HRIF_MoveC(0,0,dStartPoint , dAuxPoint, dEndPoint,
+                                   nFixedPosure, nMoveCType, dRadLen, dVelocity, dAcc, dRadius,sTcpName , sUcsName, strCmdID)
+        result = []
+        self.arm.waitMovementDone(0,0,result) # 等待运动完成
