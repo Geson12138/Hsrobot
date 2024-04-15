@@ -5,8 +5,7 @@ nohup roscore --host 192.168.31.103 &> /dev/null &
 ROSCORE_PID=$!  
 echo "roscore PID: $ROSCORE_PID" > ros_processes.pid  
   
-# 等待roscore启动完成  
-sleep 2
+# 如果您需要启动roscore，请取消上面三行的注释，并确保roscore先启动  
   
 # 启动roslaunch，并在前台运行  
 # 假设您有一个名为 my_launch_file.launch 的 launch 文件  

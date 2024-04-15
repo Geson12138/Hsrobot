@@ -7,7 +7,7 @@ if [ ! -d ".git" ]; then
 fi  
   
 # 获取远程仓库的最新提交  
-git fetch hsrobot BQ_Program
+git fetch origin BQ_Program
   
 # 检查本地分支和远程分支是否有差异  
 if ! git rev-list --count --left-right origin/master...HEAD | grep '^< [0-9]\+$'; then  
@@ -18,7 +18,7 @@ else
       
     if [[ "$choice" == "y" || "$choice" == "Y" ]]; then  
         # 执行git pull命令，这里假设拉取origin的master分支，你可以根据需要修改  
-        git pull hsrobot BQ_Program  
+        git pull origin BQ_Program  
           
         # 检查拉取是否成功  
         if [ $? -ne 0 ]; then  
@@ -53,7 +53,7 @@ read -p "是否推送更改到远程仓库？(y/n) " choice
 # 根据用户选择执行推送  
 if [[ "$choice" == "y" || "$choice" == "Y" ]]; then  
     # 执行git push命令，这里假设推送到origin的master分支，你可以根据需要修改  
-    git push hsrobot BQ_Program  
+    git push origin BQ_Program  
       
     # 检查推送是否成功  
     if [ $? -ne 0 ]; then  
