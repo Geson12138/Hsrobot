@@ -33,7 +33,7 @@ else
 fi  
   
 # 添加所有更改的文件到暂存区  
-git add .  
+git add ./  
   
 # 提示用户输入提交信息  
 read -p "请输入提交信息: " commit_message  
