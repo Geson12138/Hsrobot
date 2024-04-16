@@ -55,7 +55,7 @@ print(f'末端期望位姿: {d_tcp_pose}\n')
 # if d_tcp_pose[3] > 0:
 #     d_tcp_pose[3] = - d_tcp_pose[3]
 f_tcp_pose = np.array([-27, 24, -47, 7, 0, 18])
-d_tcp_pose = d_tcp_pose + f_tcp_pose
+# d_tcp_pose = d_tcp_pose + f_tcp_pose
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
 # # ----------------------------- 机器人运动到期望位姿--------------------------

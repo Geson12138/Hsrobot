@@ -1,7 +1,7 @@
 #!/bin/bash  
   
 # 使用nohup启动roscore，并抑制输出到/dev/null  
-nohup roscore --host 192.168.31.103 &> /dev/null &  
+nohup roscore &> /dev/null &  
 ROSCORE_PID=$!  
 echo "roscore PID: $ROSCORE_PID" > ros_processes.pid  
   
