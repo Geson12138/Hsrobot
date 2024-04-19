@@ -227,7 +227,7 @@ class RealsenseD435i(object):
                 sum_cam_grasp_point +=  cam_grasp_point
                 print(f'相机坐标系下四个角点的坐标为: \n {cam_grasp_point}')
                 count = count + 1
-            if count == 30:
+            if count == 10:
                 end_time = time.time()
                 print(f'感知模块运行时间为: {end_time - start_time} s')
                 cam_grasp_point = sum_cam_grasp_point / count

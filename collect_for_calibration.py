@@ -22,8 +22,8 @@ def get_image_frome_ros(i):
         
     time_count=0
     while True:
-        color_img = rospy.wait_for_message("/camera/color/image_raw", Image, timeout=None)
-        depth_img = rospy.wait_for_message("/camera/aligned_depth_to_color/image_raw", Image, timeout=None)
+        color_img = rospy.wait_for_message("/hs_camera/color/image_raw", Image, timeout=None)
+        depth_img = rospy.wait_for_message("/hs_camera/aligned_depth_to_color/image_raw", Image, timeout=None)
         time_count = time_count +1
         if time_count>= 10:
             break
@@ -100,16 +100,16 @@ for i in list(range(count)):
     r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
     # print(f'机器人当前TCP位姿为(in mm/degree): { [r_tcp_pos[0], r_tcp_pos[1], r_tcp_pos[2],r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2]]}\n')
 
-    c_joint_pos = np.array([float(i) for i in r_poselist[0:6]])
+    c_joint_pos = np.array([float(i) for i in r_poselist[0:5]])
     # -------------------------------------利用机器人工具箱和DH参数建立运动学模型-----------------------------
     rtb_hsrobot = rtb.DHRobot([rtb.RevoluteDH(d=0.26,alpha=np.pi/2),
                         rtb.RevoluteDH(a=0.48,alpha=np.pi),
                         rtb.RevoluteDH(alpha=np.pi/2),
                         rtb.RevoluteDH(d=0.52, alpha=-np.pi/2),
                         rtb.RevoluteDH(alpha=np.pi/2),
-                        rtb.RevoluteDH(d=0.192)
+                        # rtb.RevoluteDH(d=0.192)
                         ], name="hsrobot")
-    q_init = np.array([0,np.pi/2,np.pi/2,0,0,0])
+    q_init = np.array([0,np.pi/2,np.pi/2,0,0])
     # q_cur = c_joint_pos[0:5]/180*np.pi # 机器人前五个关节位置.
     q_cur = c_joint_pos/180*np.pi # 机器人前五个关节位置
     q = np.add(q_init,q_cur)
@@ -119,7 +119,8 @@ for i in list(range(count)):
     euler_angles = spatialmathbase.tr2rpy(temp_r)
     ori = np.array([np.rad2deg(j) for j in euler_angles]) 
 
-    pose = np.concatenate((r_tcp_ori,r_tcp_pos.T))
+    # pose = np.concatenate((r_tcp_ori,r_tcp_pos.T))
+    pose = np.concatenate((ori, pos))
 
     print(f'工具箱pos: {pos}, 直接读pos: {r_tcp_pos}')
     print(f'工具箱ori: {ori}, 直接读ori: {r_tcp_ori}')

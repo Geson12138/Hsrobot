@@ -23,11 +23,15 @@ prefix description: i_ for initial; r_ for real; d_ for desired; f_ for fixed
 # ----------------------------- 运动到初始位姿-------------------------------
 i_tcp_pose = np.array([-687,-11,333,-180,0,90]) # 偏航 俯仰 翻滚
 # 定义笛卡尔空间目标初始位置
-hsrobot.move_l(i_tcp_pose,50,sTcpName="TCP_grasp")
+# hsrobot.move_l(i_tcp_pose,50,sTcpName="TCP_grasp")
 
 # 定义关节目标空间初始位置
-i_joint_pos = np.array([0.757, -0.407, -147.771, -0.033, 39.295, 13.386])
-hsrobot.move_j(i_joint_pos,15,sTcpName="TCP_grasp")
+# i_joint_pos = np.array([0.757, -0.407, -147.771, -0.033, 39.295, 13.386])
+# hsrobot.move_j(i_joint_pos,15,sTcpName="TCP_grasp")
+
+#定义获取图片位置
+joint_get_img = np.array([5.714, -4.4, -115.35, 0.022, -44.95, 13.325])
+hsrobot.move_j(joint_get_img,15,sTcpName="TCP_grasp")
 
 # ----------------------------- 获取机器人状态-------------------------------
 # 读取实际关节位置变量
@@ -46,9 +50,12 @@ hsrobot.move_j(i_joint_pos,15,sTcpName="TCP_grasp")
 # [    -727.65     -172.42      235.82      179.31    -0.74764      83.941]
 
 realsenseD435i = RealsenseD435i()
-cam_grasp_point = realsenseD435i.vision_module_output()
+# cam_grasp_point = realsenseD435i.vision_module_output()
 # print(f'相机坐标系下四个角点的齐次坐标为: {cam_grasp_point}')
-[d_tcp_pos,d_tcp_ori] = hsrobot.get_TCP_targetPose(cam_grasp_point)
+# [d_tcp_pos,d_tcp_ori] = hsrobot.get_TCP_targetPose(cam_grasp_point)
+[d_tcp_pos,d_tcp_ori] = hsrobot.get_TCP_targetPose2()#采用二维码识别
+# d_tcp_pos[1] -= 1.985
+# d_tcp_pos[0] -= 14.385
 d_tcp_pose = np.concatenate((np.array(d_tcp_pos),np.array(d_tcp_ori)))
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
@@ -59,21 +66,64 @@ f_tcp_pose = np.array([-27, 24, -47, 7, 0, 18])
 print(f'末端期望位姿: {d_tcp_pose}\n')
 
 # # ----------------------------- 机器人运动到期望位姿--------------------------
+# 定义关节目标空间初始位置
+i_joint_pos = np.array([0.757, -0.407, -147.771, -0.033, 39.295, 13.386])
+hsrobot.move_j(i_joint_pos,15,sTcpName="TCP_grasp")
+
 d_tcp_pose_1 = d_tcp_pose.copy() # 创建一个副本，并不是直接引用, 如果直接等于就是引用，指向同一个数组对象
-d_tcp_pose_1[0:3] = d_tcp_pose_1[0:3] + np.array([100, 100, 100])
+d_tcp_pose_1[2] = 300
+d_tcp_pose_1[0:3] = d_tcp_pose_1[0:3] + np.array([100, 100, 0])
 print('期望位姿: ',d_tcp_pose_1)
 hsrobot.move_l(d_tcp_pose_1,30,sTcpName="TCP_grasp")
 
-d_tcp_pose_2 = d_tcp_pose.copy()
-d_tcp_pose_2[0:3] = d_tcp_pose_2[0:3] + np.array([100, 0, 100])
+d_tcp_pose_2 = d_tcp_pose_1.copy()
+d_tcp_pose_2[0:3] = d_tcp_pose_2[0:3] + np.array([0, -100, 0])
 print('期望位姿: ',d_tcp_pose_2)
 hsrobot.move_l(d_tcp_pose_2,30,sTcpName="TCP_grasp")
 
-d_tcp_pose_3 = d_tcp_pose.copy()
-d_tcp_pose_3[0:3] = d_tcp_pose_3[0:3] + np.array([0, 0, 100])
+d_tcp_pose_3 = d_tcp_pose_2.copy()
+d_tcp_pose_3[0:3] = d_tcp_pose_3[0:3] + np.array([-100, 0, 0])
 print('期望位姿: ',d_tcp_pose_3)
 hsrobot.move_l(d_tcp_pose_3,30,sTcpName="TCP_grasp")
 
+d_tcp_pose_4 = d_tcp_pose_3.copy()
+d_tcp_pose_4[2] = d_tcp_pose[2] + 15
+hsrobot.move_l(d_tcp_pose_4,30,sTcpName="TCP_grasp")
+
+# ----------------------------- plan-------------------------------
+if input('是否执行plan? y/n') == 'y':
+    plan = True
+else:
+    plan = False
+if plan:
+    config = {
+        'SPEED': 30,
+        'step1' : np.array([-962.474,123.734,300.747, -180, 7.925, 90]),#伸进去
+        'step2' : np.array([-962.474,48.745,300.747, -180, 7.925, 90]),#向左移动298.424
+        'step3' : np.array([-988.039, 48.747, 317.772, 179.999, 7.925, 90.0]),#向前上移动
+        'step4' : np.array([-988.043, -30.424, 317.783, -180.0, 7.925, 90.0]),#向左移动
+        'step5' : np.array([-988.043, -30.416, 329.506, -180.0, -15.062, 90.0]),#绕tcp-yaw旋转，z向上移动
+        'step6' : np.array([-988.044, -136.767, 338.246, -180.0, -37.824, 90.0]),#绕tcp-yaw旋转，z向上移动，向左移动
+    }
+    ready_tcp_pos = np.array([-729.235, 123.737, 300.747, -180, 7.925, 90])
+    # hsrobot.move_j(init_joint_pos,15,sTcpName="TCP_grasp")
+    hsrobot.move_l(ready_tcp_pos,35,sTcpName="TCP_grasp")
+
+   
+    #正着走
+    for i in range(6):
+        print(f'step{i+1}')
+        hsrobot.move_l(config[f'step{i+1}'],config['SPEED'],sTcpName="TCP_5")
+        time.sleep(1.5)
+
+    #倒着走
+    for i in range(6):
+        print(f'step{i+1}')
+        hsrobot.move_l(config[f'step{6-i}'],config['SPEED'],sTcpName="TCP_5")
+        time.sleep(1.5)
+
+    #回到初始位置
+    hsrobot.move_l(ready_tcp_pos,15,sTcpName="TCP_grasp")
 # 读取实际力传感器数据
 # result = []; hsrobot.arm.HRIF_ReadFTCabData(0,0,result)
 # r_force_data = np.array([float(i) for i in result[0:6]]) 

@@ -13,6 +13,15 @@ import numpy as np
 import math
 import spatialmath.base as spatialmathbase
 import time
+from hsrobot_des import HSRobotdes
+import cv2
+import cv2.aruco as aruco
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+import rospy
+from spatialmath import SE3
+#读取图片
+bridge = CvBridge() 
 
 # self.trans_cam2wrist = np.array([[ 5.28869282e-02, -9.98584258e-01,  5.69673203e-03,  7.77746026e+01],
 #                                          [ 9.98043816e-01,  5.30470434e-02,  3.30840084e-02, -5.14321849e+01],
@@ -36,10 +45,14 @@ class HSROBOT(object):
         nRet = self.arm.HRIF_IsConnected(0)
         print(f'Connecting to Robot Controller: {nRet}')
         # 相机相对于tcp(第五个关节)的变换矩阵,运行calib/calibration.py得到
-        self.trans_cam2wrist = np.array([[ 4.79173933e-02, -9.93733916e-01,  1.00979344e-01,  6.89458508e+01],
-                                         [ 9.98850997e-01,  4.77509031e-02, -4.06661492e-03, -4.71596805e+01],
-                                         [-7.80721685e-04,  1.01058180e-01,  9.94880211e-01,  3.61076252e+01],
-                                         [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
+        # self.trans_cam2wrist = np.array([[ 4.79173933e-02, -9.93733916e-01,  1.00979344e-01,  6.89458508e+01],
+        #                                  [ 9.98850997e-01,  4.77509031e-02, -4.06661492e-03, -4.71596805e+01],
+        #                                  [-7.80721685e-04,  1.01058180e-01,  9.94880211e-01,  3.61076252e+01],
+        #                                  [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
+        self.trans_cam2wrist=np.array([[ 4.34533477e-02, -9.98988685e-01 ,-1.15504612e-02,  9.79193679e+01],
+                                        [-3.12009268e-03 , 1.14256275e-02 ,-9.99929858e-01, -7.70839322e+01],
+                                        [ 9.99050585e-01 , 4.34863382e-02 ,-2.62045552e-03 ,-3.47568309e+01],
+                                        [ 0.00000000e+00 , 0.00000000e+00  ,0.00000000e+00 , 1.00000000e+00]])
         
 
     '''
@@ -147,6 +160,18 @@ class HSROBOT(object):
         temp_rt = np.column_stack([temp_r, temp_t])  # 列合并
         trans_wrist2base = np.row_stack((temp_rt, np.array([0,0,0,1]))) # 行合并
         return trans_wrist2base
+    
+    def get_T_wrist2base2(self):
+        hs_robot = HSRobotdes()
+        r_poselist = [] # 定义返回值空列表
+        self.arm.HRIF_ReadActPos(0,0, r_poselist)
+        c_joint_pos = np.array([float(i) for i in r_poselist[0:6]])
+        tem_T = hs_robot.fkine_to_joint5(c_joint_pos[0:5]/180*np.pi)
+        temp_r = tem_T.A[:3,:3];temp_t = tem_T.A[:3,3]*1000
+        temp_rt = np.column_stack([temp_r, temp_t])  # 列合并
+        trans_wrist2base = np.row_stack((temp_rt, np.array([0,0,0,1]))) # 行合并
+        return trans_wrist2base
+        
 
     '''
     Function: 根据视觉感认知输出，计算机械臂末端的期望位姿
@@ -171,7 +196,7 @@ class HSROBOT(object):
         RT = np.zeros((4,4)) # 向量表示为齐次坐标形式
         RT[0:3,0] = plug_xaxis_vec; RT[0:3,1] = plug_yaxis_vec; RT[0:3,2] = plug_zaxis_vec; RT[0:3,3] = cam_center_point.T; RT[3,3] = 1
         # 得到腕关节到基座的变换矩阵
-        trans_wrist2base = self.get_T_wrist2base()
+        trans_wrist2base = self.get_T_wrist2base2()
         grasp_target_pose = trans_wrist2base @ self.trans_cam2wrist @ RT
 
 
@@ -199,6 +224,122 @@ class HSROBOT(object):
         d_tcp_pos = grasp_target_pose[0:3,3] # 末端的期望位置
         d_tcp_ori = self.rot2euler(grasp_target_pose[0:3,0:3]) # 末端的期望姿态
         return d_tcp_pos,d_tcp_ori
+    
+    def get_TCP_targetPose2(self):
+        dist=np.array(([[0.0,0.0,0.0,0.0,0.0]]))
+        newcameramtx=np.array([[189.076828   ,  0.    ,     361.20126638]
+        ,[  0 ,2.01627296e+04 ,4.52759577e+02]
+        ,[0, 0, 1]])
+
+        mtx=np.array([[606.941  , 0.      ,   316.836],
+        [  0.       ,  607.06, 253.232],
+        [  0.,           0.,           1.        ]])
+
+        bridge = CvBridge() 
+        rospy.init_node('get_images', anonymous=True)
+        # 定义一个ros话题，把self.color_image发布出去
+        image_pub = rospy.Publisher('image_topic', Image, queue_size=10)
+        font = cv2.FONT_HERSHEY_SIMPLEX #font for displaying text (below)
+
+        trans_wrist2base = self.get_T_wrist2base2()
+        while True:
+            time_out = 0
+            while time_out < 2:
+                color_img = rospy.wait_for_message("/hs_camera/color/image_raw", Image, timeout=None)
+                depth_img = rospy.wait_for_message("/hs_camera/aligned_depth_to_color/image_raw", Image, timeout=None)
+                time_out = time_out +1
+            # if time_count>= 10:
+            #     break
+            color_image = bridge.imgmsg_to_cv2(color_img, 'bgr8')
+            cv2.imwrite(f'save_images/IMG_3739.jpg',color_image, [int(cv2.IMWRITE_JPEG_QUALITY), 96])
+            
+            frame=cv2.imread('save_images/IMG_3739.jpg')
+
+        # cap = cv2.VideoCapture(0)
+
+
+            # ret, frame = cap.read()
+            h1, w1 = frame.shape[:2]
+            # 读取摄像头画面
+            # 纠正畸变
+            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (h1, w1), 0, (h1, w1))
+            dst1 = cv2.undistort(frame, mtx, dist, None, newcameramtx)
+            x, y, w1, h1 = roi
+            dst1 = dst1[y:y + h1, x:x + w1]
+            frame=dst1
+        
+        
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_1000)
+            parameters =  aruco.DetectorParameters_create()
+            dst1 = cv2.undistort(frame, mtx, dist, None, newcameramtx)
+            '''
+            detectMarkers(...)
+                detectMarkers(image, dictionary[, corners[, ids[, parameters[, rejectedI
+                mgPoints]]]]) -> corners, ids, rejectedImgPoints
+            '''
+        
+            #使用aruco.detectMarkers()函数可以检测到marker，返回ID和标志板的4个角点坐标
+            corners, ids, rejectedImgPoints = aruco.detectMarkers(gray,aruco_dict,parameters=parameters)
+        
+        #    如果找不打id
+            if ids is not None:
+        
+                rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, 0.02, mtx, dist)
+                # 估计每个标记的姿态并返回值rvet和tvec ---不同
+                # from camera coeficcients
+                (rvec-tvec).any() # get rid of that nasty numpy value array error
+        
+        #        aruco.drawAxis(frame, mtx, dist, rvec, tvec, 0.1) #绘制轴
+        #        aruco.drawDetectedMarkers(frame, corners) #在标记周围画一个正方形
+        
+                for i in range(rvec.shape[0]):
+
+                    #转换为位姿矩阵
+                    rvec = np.array(rvec)
+                    tvec = np.array(tvec)*1000
+                    R,_ = cv2.Rodrigues(rvec)
+                    RT = np.zeros((4,4))
+                    RT[:3,:3] = R
+                    RT[:3,3] = tvec
+                    RT[3,3] = 1
+                    RT = RT*SE3.Rx(np.pi)*SE3.Rz(np.pi/2)
+                    print('RT',RT)
+                    grasp_target_pose = trans_wrist2base @ self.trans_cam2wrist @ RT
+                    d_tcp_pos = grasp_target_pose[0:3,3] # 末端的期望位置
+                    d_tcp_ori = self.rot2euler(grasp_target_pose[0:3,0:3]) # 末端的期望姿态
+
+                    rvec = (self.rot2euler(RT[:3,:3])/180*np.pi).reshape(1,1,3)
+                    print('rvec',rvec)
+                    print('tvec',tvec)
+                    aruco.drawAxis(frame, mtx, dist, rvec[i, :, :], tvec[i, :, :]/1000, 0.03)
+                    aruco.drawDetectedMarkers(frame, corners)
+                ###### DRAW ID #####
+                cv2.putText(frame, "Id: " + str(ids), (0,64), font, 1, (0,255,0),2,cv2.LINE_AA)
+        
+        
+            else:
+                ##### DRAW "NO IDS" #####
+                cv2.putText(frame, "No Ids", (0,64), font, 1, (0,255,0),2,cv2.LINE_AA)
+        
+        
+            # 显示结果框架
+            cv2.imshow("frame",frame)
+        
+            key = cv2.waitKey(1)
+        
+            if key == 27:         # 按esc键退出
+                print('esc break...')
+                # cap.release()
+                cv2.destroyAllWindows()
+                break
+        
+            if key == ord(' '):   # 按空格键保存
+        #        num = num + 1
+        #        filename = "frames_%s.jpg" % num  # 保存一张图像
+                filename = str(time.time())[:10] + ".jpg"
+                cv2.imwrite(filename, frame)
+        return d_tcp_pos, d_tcp_ori
     
 
     '''
