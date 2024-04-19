@@ -393,44 +393,12 @@
       velocity="0" />
   </joint>
   <link
-    name="elfin_end_link">
-    <inertial>
-      <origin
-        xyz="-0.000223419892434032 -0.000503545919359024 -0.0365103777839941"
-        rpy="0 0 0" />
-      <mass
-        value="0.119080209337947" />
-      <inertia
-        ixx="8.08550872901422E-05"
-        ixy="-7.46173009805164E-09"
-        ixz="2.21279422199852E-07"
-        iyy="8.32324966499315E-05"
-        iyz="-1.33289933354814E-07"
-        izz="0.000151523047618214" />
-    </inertial>
+    name="TCP_grasp">
     <visual>
       <origin
-        xyz="0 0 0"
+        xyz="0.0 0.0 0.0"
         rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="./meshes/elfin_end_link.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
-      </material>
     </visual>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="./meshes/elfin_end_link.STL" />
-      </geometry>
-    </collision>
   </link>
   <joint
     name="elfin_end_joint"
@@ -441,7 +409,7 @@
     <parent
       link="elfin_link6" />
     <child
-      link="elfin_end_link" />
+      link="TCP_grasp" />
     <axis
       xyz="0 0 0" />
   </joint>
