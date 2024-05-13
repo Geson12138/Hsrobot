@@ -33,6 +33,7 @@ class RealsenseD435i(object):
         self.im_height = 480
         self.im_width = 640
         self.model = YOLO('./models/train/weights/best.pt')
+        self.model_obs = YOLO('./models/train8/weights/best.pt')
 
     def get_data(self):
         # Return color image and depth image
@@ -238,11 +239,85 @@ class RealsenseD435i(object):
             # end_time = time.time()
             # if end_time - start_time >= 100:
             #     break
-
-
         print('感认知：角点输出正常')
         return cam_grasp_point
 
+    def obs_model_output(self):
+        results = self.model_obs(self.color_image)
+        for result in results:
+            for box in result.boxes:
+                m = torch.squeeze(box.xyxy.data)
+                cv2.rectangle(self.color_image , (int(m[0]), int(m[1])), (int(m[2]), int(m[3])), (0, 0, 255), 2)
+                rectangle_point = np.array([[int(m[0]), int(m[1])], [int(m[2]), int(m[3])]])
+                mean_point = np.mean(rectangle_point,axis=0)
+                cv2.circle(self.color_image, (int(mean_point[0]), int(mean_point[1])), 1, [255, 255, 255], thickness=-1) # 白色
+
+            # 在图上画点
+            for keypoint in result.keypoints:
+                m = torch.squeeze(keypoint.xy.data)
+
+                point = np.array([int(m[0][0]), int(m[0][1]), int(m[1][0]), int(m[1][1])])
+                cv2.circle(self.color_image, (point[0], point[1]), 1, (0, 255, 0), -1) # 绿色 
+                cv2.circle(self.color_image, (point[2], point[3]), 1, (0, 0, 255), -1) # 红色 
+                line_point = np.array([[point[0], point[1]],[point[2],point[3]]])     
+            obs_key_point = np.vstack((mean_point,line_point))
+        # 保存图像为 'grasp_point.jpg'，质量为96%的JPEG格式  
+        cv2.imwrite('save_images/grasp_point.jpg', self.color_image, [int(cv2.IMWRITE_JPEG_QUALITY), 96])    
+
+        ros_image = self.bridge.cv2_to_imgmsg(self.color_image, encoding="bgr8")
+        self.image_pub.publish(ros_image)
+            
+
+        if len(obs_key_point) == 0:
+            return None
+        else:
+            print('感认知：障碍关键点检测正常')
+            return obs_key_point
+            
+    def obs_key_output(self):
+
+        intrin = rs.pyrealsense2.intrinsics()
+        intrin.fx = 606.941
+        intrin.fy = 607.06
+        intrin.ppx = 316.836
+        intrin.ppy = 253.232
+
+        start_time = time.time()
+        sum_cam_obs_point = np.zeros((3,3))
+        count = 0
+        while True:
+
+            self.get_image_frome_ros() # 先获取图像数据
+            # self.get_data()
+            pixel_obs_point = self.obs_model_output() # 角点像素坐标
+            # pixel_depth_point = np.array([self.depth_image[row[1],row[0]] for row in pixel_obs_point]) # 获取角点像素对应的深度 单位:mm  
+            pixel_depth_point = np.array([self.depth_image[int(row[1]),int(row[0])] for row in pixel_obs_point])# 获取角点像素对应的深度 单位:mm
+            cam_obs_point = np.ones((3,3))
+
+            for i in range(3):
+                cam_obs_point[:,i] = np.array(rs.rs2_deproject_pixel_to_point(intrin, pixel_obs_point[i,:], pixel_depth_point[i])).T
+
+            # 正常运行main.py时使用，取消下面的注释
+            if cam_obs_point[2,0] !=0 and cam_obs_point[2,1] !=0 and cam_obs_point[2,2] !=0:
+                sum_cam_obs_point +=  cam_obs_point
+                print(f'相机坐标系下三个角点的坐标为: \n {cam_obs_point}')
+                count = count + 1
+            if count == 5:
+                end_time = time.time()
+                print(f'感知模块运行时间为: {end_time - start_time} s')
+                cam_obs_point = sum_cam_obs_point / count
+                print(f'相机坐标系下三个角点的坐标为: \n {cam_obs_point}')
+                break         
+
+            # 测试视觉模型效果使用, 运行main.py时注释
+            # end_time = time.time()
+            # if end_time - start_time >= 100:
+            #     break
+
+
+        print('感认知：角点输出正常')
+        return cam_obs_point
+        
        
 # 测试视觉模型效果使用, 运行main.py时注释    
 # if __name__=='__main__':

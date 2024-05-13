@@ -1,27 +1,19 @@
 #!/bin/bash  
   
-# 检查 ros_processes.pid 文件是否存在  
-if [ -f ros_processes.pid ]; then  
-    while IFS= read -r line; do  
-        PID_TYPE_PID=($line)  
-        PID=${PID_TYPE_PID[2]}  
-          
-        # 检查进程是否存在  
-        if kill -0 $PID 2>/dev/null; then  
-            echo "Killing ${PID_TYPE_PID[0]} with PID: $PID"  
-            # 杀死进程  
-            kill $PID  
-              
-            # 等待进程退出（可选，如果需要确保进程已经退出）  
-            # wait $PID || true  
-            echo "${PID_TYPE_PID[0]} with PID $PID has been stopped."  
-        else  
-            echo "${PID_TYPE_PID[0]} with PID $PID is not running."  
-        fi  
-    done < ros_processes.pid  
-      
-    # 删除 PID 文件  
-    rm ros_processes.pid  
+# 查找与 RealSense 相关的所有进程并获取 PID  
+realsense_pids=$(ps aux | grep realsense | grep -v grep | awk '{print $2}')  
+  
+# 检查是否找到了进程  
+if [[ -z "$realsense_pids" ]]; then  
+    echo "没有找到与 RealSense 相关的进程"  
 else  
-    echo "No PID file found for ROS processes."  
+    # 遍历所有 PID 并杀死它们  
+    for pid in $realsense_pids; do  
+        echo "正在杀死 PID: $pid"  
+        kill "$pid"  
+        # 你可以添加 -9 选项来强制杀死进程，但这通常是不必要的  
+        # kill -9 "$pid"  
+    done  
+      
+    echo "所有与 RealSense 相关的进程已被杀死"  
 fi

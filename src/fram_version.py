@@ -16,7 +16,6 @@ def get_image_frome_ros():
     while True:
         color_img = rospy.wait_for_message("/hs_camera/color/image_raw", Image, timeout=None)
         depth_img = rospy.wait_for_message("/hs_camera/aligned_depth_to_color/image_raw", Image, timeout=None)
-        print('color_img:')
         time_count = time_count +1
         if time_count>= 10:
             break

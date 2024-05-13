@@ -4,12 +4,12 @@ import time
 
 config = {
     'SPEED': 20,
-    'step1' : np.array([-962.474,123.734,300.747, -180, 7.925, 90]),#伸进去
-    'step2' : np.array([-962.474,48.745,300.747, -180, 7.925, 90]),#向左移动298.424
-    'step3' : np.array([-988.039, 48.747, 317.772, 179.999, 7.925, 90.0]),#向前上移动
-    'step4' : np.array([-988.043, -30.424, 317.783, -180.0, 7.925, 90.0]),#向左移动
-    'step5' : np.array([-988.043, -30.416, 329.506, -180.0, -15.062, 90.0]),#绕tcp-yaw旋转，z向上移动
-    'step6' : np.array([-988.044, -136.767, 338.246, -180.0, -37.824, 90.0]),#绕tcp-yaw旋转，z向上移动，向左移动
+    'step1' : np.array([-965.528, 123.739, 294.749, 0.0, 28, 90.0]),#伸进去
+    'step2' : np.array([-965.529, 48.623, 294.747, -0.0, 28.0, 90.0]),#向左移动298.424
+    'step3' : np.array([-975.529, 52.623, 310.747, -0.0, 15.186, 90.0]),#向前上移动
+    'step4' : np.array([-975.973, 10.065, 310.751, 0.0, 15.186, 90.0]),#向左移动
+    'step5' : np.array([-975.973, 10.062, 322.753, 0.0, 2.632, 90.0]),#绕tcp-yaw旋转，z向上移动
+    # 'step6' : np.array([-988.044, -136.767, 338.246, -180.0, -37.824, 90.0]),#绕tcp-yaw旋转，z向上移动，向左移动
 }
 
 # -------------------------------连接机器人--------------------------------
@@ -19,7 +19,7 @@ time.sleep(3.5)
 
 #======================运动到初始位置==============================
 # init_joint_pos = np.array([-10.956,17.118,-136.711,-7.59,67.931,38.165])
-init_tcp_pos = np.array([-729.235, 123.737, 300.747, -180, 7.925, 90])
+init_tcp_pos = np.array([-729.235, 123.737, 294.749, 0, 0, 90])
 # hsrobot.move_j(init_joint_pos,15,sTcpName="TCP_grasp")
 hsrobot.move_l(init_tcp_pos,15,sTcpName="TCP_grasp")
 
@@ -36,16 +36,16 @@ print(f'机器人当前TCP位姿为(in mm/degree): { [r_tcp_pos[0], r_tcp_pos[1]
 test_bias = np.array([0,0,0,0,0,0])
 
 #正着走
-for i in range(6):
+for i in range(5):
     print(f'step{i+1}')
     hsrobot.move_l(config[f'step{i+1}']+test_bias,config['SPEED'],sTcpName="TCP_grasp")
     time.sleep(1.5)
 
 #倒着走
-for i in range(6):
+for i in range(5):
     print(f'step{i+1}')
-    hsrobot.move_l(config[f'step{6-i}']+test_bias,config['SPEED'],sTcpName="TCP_grasp")
+    hsrobot.move_l(config[f'step{5-i}']+test_bias,config['SPEED'],sTcpName="TCP_grasp")
     time.sleep(1.5)
 
-#回到初始位置
+# #回到初始位置
 hsrobot.move_l(init_tcp_pos,15,sTcpName="TCP_grasp")

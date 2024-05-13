@@ -113,7 +113,7 @@ while True:
 #    如果找不打id
     if ids is not None:
  
-        rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, 0.02, mtx, dist)
+        rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, 0.04, mtx, dist)
         # 估计每个标记的姿态并返回值rvet和tvec ---不同
         # from camera coeficcients
         (rvec-tvec).any() # get rid of that nasty numpy value array error
@@ -126,16 +126,20 @@ while True:
             #转换为位姿矩阵
             rvec = np.array(rvec)
             tvec = np.array(tvec)
+            # print('rvec',rvec)
+            # print('tvec',tvec)
+            # aruco.drawAxis(frame, mtx, dist, rvec[i, :, :], tvec[i, :, :], 0.03)
             R,_ = cv2.Rodrigues(rvec)
             pose = np.zeros((4,4))
             pose[:3,:3] = R
-            pose[:3,3] = tvec
+            pose[:3,3] = tvec 
             pose[3,3] = 1
 
-            pose = pose*SE3.Rx(np.pi)*SE3.Rz(np.pi/2)
+            pose = pose*SE3.Rx(np.pi)*SE3.Rz(np.pi/2)*SE3.Trans(-0.09,0,0)*SE3.Ry(-np.pi*15/180)
             R = pose[:3,:3]
             rvec = rot2euler(R) / 180 * np.pi
             rvec = rvec.reshape(1,1,3)
+            tvec = pose[:3,3].reshape(1,1,3)
             print('rvec',rvec)
             print('tvec',tvec)
             print('pose',pose)

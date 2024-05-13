@@ -26,31 +26,32 @@ class SaveImageThread(threading.Thread):
     def __init__(self, pipeline):
         super(SaveImageThread, self).__init__()
         self.pipeline = pipeline
-        self.i = 1
+        self.i = 201
 
     def run(self):
 
         time.sleep(1)
         try:
-            while self.i <= 300:
+            while self.i < 300:
                 frames = self.pipeline.wait_for_frames()
                 color_frame = frames.get_color_frame()
                 if not color_frame:
                     continue
                 color_image = np.asanyarray(color_frame.get_data())
                 # 显示图片
-                print('save image: {}'.format(self.i))
+                # input('press enter to save image')
                 # 保存图片
-                cv2.imwrite('/home/hsrobot/datasets/cable0329/image_{}.jpg'.format(self.i), color_image)
+                cv2.imwrite('/home/hsrobot/datasets/cable_0424/image_{}.jpg'.format(self.i), color_image)
+                print('save image: {}'.format(self.i))
                 self.i += 1
-                time.sleep(0.5)
+                time.sleep(2)
         finally:
             self.pipeline.stop()
 
 # 创建管道1
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
 pipeline.start(config)
 
 pipeline1 = pipeline

@@ -59,7 +59,7 @@ class HSROBOT(object):
     Function: 根据RPY角计算旋转矩阵:
     Input: RPY Angles, in radians
     Output: Rotation Matrix
-    RPY角是欧拉角的一种, 是绕固定轴旋转的欧拉角, 按照x、y、z的顺序依次旋转yaw/theta_x、pitch/theta_y、roll/theta_z, 旋转矩阵左乘得到Rz@Ry@Rx
+    RPY角是欧拉角的一种, 是绕固定轴旋转的欧拉角, 按照x、y、z的顺序依次旋转roll/theta_x、pitch/theta_y、yaw/theta_z, 旋转矩阵左乘得到Rz@Ry@Rx
     (1) 绕固定坐标系(外旋)按照x、y、z的顺序旋转,为左乘, 也叫RPY角
     (2) 绕自身坐标系(内旋)按照z、y、x的顺序旋转,为右乘
     上述(1)和(2)等价，且由欧拉角计算旋转矩阵具有唯一性
@@ -77,20 +77,21 @@ class HSROBOT(object):
     Function: 从旋转矩阵的n、o和a分量计算旋转的rpy角
     Input: n, o, a
     Output: roll, pitch, yaw
-    RPY角是绕固定轴旋转的欧拉角, 按照绕x、y、z的顺序依次旋转(yaw/theta_x)、(pitch/theta_y)、(roll/theta_z)
-    旋转矩阵为左乘, R = Rz(roll/theta_z)*Ry(pitch/theta_y)*Rx(yaw/theta_x)
+    RPY角是绕固定轴旋转的欧拉角, 按照绕x、y、z的顺序依次旋转(roll/theta_x)、(pitch/theta_y)、(yaw/theta_z)
+    旋转矩阵为左乘, R = Rz(yaw/theta_z)*Ry(pitch/theta_y)*Rx(roll/theta_x)
     '''
     def rotation_matrix_to_rpy(self,n, o, a): 
         
-        roll = np.arctan2(n[1], n[0])  
-        pitch = np.arctan2(-n[2], np.sqrt(n[0]**2 + n[1]**2))  
-        yaw = np.arctan2(o[2], o[0]) - np.pi/2  
+        roll = np.arctan2(o[2], a[2])  
+        pitch = np.arctan2(-n[2], np.sqrt(o[2]**2 + a[2]**2))  
+        # yaw = np.arctan2(o[2], o[0]) - np.pi/2  
+        yaw = np.arctan2(n[1], n[0])
         
         return roll, pitch, yaw
 
     '''
     Function: 用于根据位姿pose(位置+姿态)计算变换矩阵:
-    Input:(1) RPY Angles, theta_x/yaw, theta_y/pitch, theta_z/roll, in degrees (2) Position, Tx, Ty, Tz, in m
+    Input:(1) RPY Angles, theta_x/yaw, theta_y/pitch, theta_z/roll, in degrees (2) Position, Tx, Ty, Tz, in mm
     Output: Transformation Matrix
     '''
     def pose_robot(self,x, y, z, Tx, Ty, Tz):
@@ -225,6 +226,36 @@ class HSROBOT(object):
         d_tcp_ori = self.rot2euler(grasp_target_pose[0:3,0:3]) # 末端的期望姿态
         return d_tcp_pos,d_tcp_ori
     
+    def get_TCP_obs_Pose(self,cam_obs_point):
+        #根据平面三个点算出法向量
+        vec1 = (cam_obs_point[1]-cam_obs_point[0])/np.linalg.norm(cam_obs_point[1]-cam_obs_point[0])
+        vec2 = (cam_obs_point[2]-cam_obs_point[0])/np.linalg.norm(cam_obs_point[2]-cam_obs_point[0])
+
+        #y方向
+        y_axis = np.cross(vec1,vec2)
+        y_axis = y_axis/np.linalg.norm(y_axis)
+
+        #z方向固定向下
+        z_axis = vec1/np.linalg.norm(vec1)
+
+        #x方向
+        x_axis = np.cross(y_axis,z_axis)
+        x_axis = x_axis/np.linalg.norm(x_axis)
+
+        RT = np.zeros((4,4)) # 向量表示为齐次坐标形式
+        RT[0:3,0] = x_axis; RT[0:3,1] = y_axis; RT[0:3,2] = z_axis; RT[0:3,3] = cam_obs_point.T[1]; RT[3,3] = 1
+        print('RT',RT)
+        # 得到腕关节到基座的变换矩阵
+        trans_wrist2base = self.get_T_wrist2base2()
+        obs_target_pose = trans_wrist2base @ self.trans_cam2wrist @ RT
+
+        obs_tcp_pos = obs_target_pose[0:3,3] # 末端的期望位置
+        obs_tcp_ori = self.rot2euler(obs_target_pose[0:3,0:3]) # 末端的期望姿态
+
+        return obs_tcp_pos,obs_tcp_ori
+
+    
+    #二维码识别
     def get_TCP_targetPose2(self):
         dist=np.array(([[0.0,0.0,0.0,0.0,0.0]]))
         newcameramtx=np.array([[189.076828   ,  0.    ,     361.20126638]
@@ -285,7 +316,7 @@ class HSROBOT(object):
         #    如果找不打id
             if ids is not None:
         
-                rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, 0.02, mtx, dist)
+                rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, 0.04, mtx, dist)
                 # 估计每个标记的姿态并返回值rvet和tvec ---不同
                 # from camera coeficcients
                 (rvec-tvec).any() # get rid of that nasty numpy value array error
@@ -303,8 +334,9 @@ class HSROBOT(object):
                     RT[:3,:3] = R
                     RT[:3,3] = tvec
                     RT[3,3] = 1
-                    RT = RT*SE3.Rx(np.pi)*SE3.Rz(np.pi/2)
+                    RT = RT*SE3.Rx(np.pi)*SE3.Rz(np.pi/2)*SE3.Trans(-90,3,0)*SE3.Ry(-np.pi*15/180)
                     print('RT',RT)
+                    tvec = RT[:3,3].reshape(1,1,3)
                     grasp_target_pose = trans_wrist2base @ self.trans_cam2wrist @ RT
                     d_tcp_pos = grasp_target_pose[0:3,3] # 末端的期望位置
                     d_tcp_ori = self.rot2euler(grasp_target_pose[0:3,0:3]) # 末端的期望姿态
