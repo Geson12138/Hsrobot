@@ -426,9 +426,9 @@ class HSROBOT(object):
         # 定义用户坐标变量：目标空间坐标所处用户坐标系，与示教器页面的名称对应, nIsUseJoint=1 时无效，可使用默认名称"Base"
         sUcsName = "Base"
         # 关节角度最大运动速度 单位[°/s]
-        dVelocity = 30  
+        dVelocity = 50  
         # 关节角度最大运动加速度单位[°/s^2]
-        dAcc = 20
+        dAcc = 100
         dRadius = 5 # 定义过渡半径: 过渡半径，单位[mm]
         nIsUseJoint= 1 # 定义是否使用关节角度: 是否使用关节角度作为目标点，1 使用 0 不使用
         # 定义是否使用检测 DI 停止: 如果 nIsSeek 为 1，则开启检测 DI 停止，路点运动过程中如果电箱的 nIOBit 位索引的DI 的状态=nIOState 时，机器人停止运动，否则运动到目标点完成运动
@@ -457,11 +457,11 @@ class HSROBOT(object):
         # 定义用户坐标变量
         sUcsName = "Base"
         # 笛卡尔空间运动最大速度, 单位[mm/s], [°/s]
-        dVelocity = 50
+        dVelocity = 300
         # 笛卡尔空间运动最大加速度，单位[mm/s^2], [°/s^2]
-        dAcc = 50
+        dAcc = 1000
         # 定义过渡半径
-        dRadius = 5
+        dRadius = 50
         # 定义是否使用检测 DI 停止
         nIsSeek = 0
         # 定义检测的 DI 索引
@@ -474,6 +474,48 @@ class HSROBOT(object):
         nRet = self.arm.HRIF_MoveL(0,0, d_tcp_pose, RawACSpoints, sTcpName, sUcsName, dVelocity, dAcc, dRadius,nIsSeek,nIOBit, nIOState, strCmdID)
         result = []
         self.arm.waitMovementDone(0,0,result) # 等待运动完成
+
+        # # 等待运动完成
+        # while True:
+        #     #  判断机器人是否处于运动状态 
+        #     nRet = self.arm.HRIF_ReadRobotState(0,0,result)
+        #     if  result[0]=='0' and result[11]=='1': 
+        #         # print(result[0])
+        #         time.sleep(0.2)
+        #         break
+        #     time.sleep(0.2)
+
+
+    '''
+    Function: 机器人笛卡尔空间直线运动，没有阻塞，需要手动添加时间延迟
+    Input: 笛卡尔空间目标位姿, 笛卡尔空间运动速度 0~100, 工具坐标系
+    Output: None
+    '''
+    def move_l_timeblock(self,d_tcp_pose,vel,sTcpName = "TCP"):
+
+        # -------------------------------预定义参数--------------------------------    
+        self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
+        # 定义关节空间目标位置
+        RawACSpoints = [ 0, 0, 90, 0, 90, 0]
+        # 定义用户坐标变量
+        sUcsName = "Base"
+        # 笛卡尔空间运动最大速度, 单位[mm/s], [°/s]
+        dVelocity = 300
+        # 笛卡尔空间运动最大加速度，单位[mm/s^2], [°/s^2]
+        dAcc = 1000
+        # 定义过渡半径
+        dRadius = 50
+        # 定义是否使用检测 DI 停止
+        nIsSeek = 0
+        # 定义检测的 DI 索引
+        nIOBit = 0
+        # 定义检测的 DI 状态
+        nIOState = 0
+        # 定义路点 ID
+        strCmdID = "0"
+        # 执行路点运动
+        nRet = self.arm.HRIF_MoveL(0,0, d_tcp_pose, RawACSpoints, sTcpName, sUcsName, dVelocity, dAcc, dRadius,nIsSeek,nIOBit, nIOState, strCmdID)
+
 
     '''
     Function: 机器人笛卡尔空间圆弧轨迹运动，增加了判断是否运动完成
