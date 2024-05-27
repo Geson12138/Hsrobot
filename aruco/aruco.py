@@ -6,29 +6,33 @@ import matplotlib.pyplot as plt
 dict_gen = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 
 # # save spawned ArUco Marker image to print
-# marker_id = 26 # 生成标记的id
-# marker_size = 100 # 生成标记的像素大小
-# marker_image = cv2.aruco.generateImageMarker(dict_gen, marker_id, marker_size,1)
-# cv2.imwrite(f'markerImage_{marker_size}_id{marker_id}.jpg',marker_image)
+# for i in list(range(21,31)):
+
+#     marker_id = i # 生成标记的id
+#     marker_size = 100 # 生成标记的像素大小
+#     marker_image = cv2.aruco.generateImageMarker(dict_gen, marker_id, marker_size,1)
+#     cv2.imwrite(f'markerImage_{marker_size}_id{marker_id}.jpg',marker_image)
 
 # Initialize the detector parameters using default values
 parameters =  cv2.aruco.DetectorParameters()
 
-# frame = cv2.imread('markerImage_100_id23.jpg')
-# gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+frame = cv2.imread('markerImage_100_id23.jpg')
+gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
-# markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(gray, dict_gen, parameters=parameters)
-# frame_markers = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
+markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(gray, dict_gen, parameters=parameters)
+frame_markers = cv2.aruco.drawDetectedMarkers(frame, markerCorners, markerIds)
 
-# cv2.namedWindow('frame_makers',cv2.WINDOW_NORMAL)
-# while True:
-#     cv2.imshow('frame_markers',frame_markers)
-#     # 按 'Esc' 退出循环
-#     if cv2.waitKey(1) & 0xFF == 27:  # 27是Esc键的ASCII值
-#         break
-# cv2.destroyAllWindows()
+cv2.namedWindow('frame_makers',cv2.WINDOW_NORMAL)
+while True:
+    cv2.imshow('frame_markers',frame_markers)
+    # 按 'Esc' 退出循环
+    if cv2.waitKey(1) & 0xFF == 27:  # 27是Esc键的ASCII值
+        break
+cv2.destroyAllWindows()
 
 # =========================实时视频流检测=============================
+
+'''
 
 # 初始化摄像头
 cap = cv2.VideoCapture(0)  # 0 通常是默认摄像头的标识
@@ -74,3 +78,5 @@ while True:
 cap.release()
 # 关闭所有OpenCV窗口
 cv2.destroyAllWindows()
+
+'''
