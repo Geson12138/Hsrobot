@@ -428,7 +428,7 @@ class HSROBOT(object):
         # 关节角度最大运动速度 单位[°/s]
         dVelocity = 50  
         # 关节角度最大运动加速度单位[°/s^2]
-        dAcc = 100
+        dAcc = 80
         dRadius = 5 # 定义过渡半径: 过渡半径，单位[mm]
         nIsUseJoint= 1 # 定义是否使用关节角度: 是否使用关节角度作为目标点，1 使用 0 不使用
         # 定义是否使用检测 DI 停止: 如果 nIsSeek 为 1，则开启检测 DI 停止，路点运动过程中如果电箱的 nIOBit 位索引的DI 的状态=nIOState 时，机器人停止运动，否则运动到目标点完成运动
@@ -439,9 +439,11 @@ class HSROBOT(object):
         nIOState = 0
         # 定义路点 ID: 当前路点 ID，可以自定义，也可以按顺序设置为"1"，"2"，"3"
         stdCmdID = "0"
-        self.arm.HRIF_MoveJ(0,0,tcp_pose,joint_pos,sTcpName,sUcsName,dVelocity,dAcc,dRadius,nIsUseJoint, nIsSeek, nIOBit, nIOState, stdCmdID)
+        nRet = self.arm.HRIF_MoveJ(0,0,tcp_pose,joint_pos,sTcpName,sUcsName,dVelocity,dAcc,dRadius,nIsUseJoint, nIsSeek, nIOBit, nIOState, stdCmdID)
+        print(nRet)
         result = []
-        self.arm.waitMovementDone(0,0,result) # 等待运动完成
+        nRet = self.arm.waitMovementDone(0,0,result) # 等待运动完成
+        print(nRet)
 
     '''
     Function: 机器人笛卡尔空间直线运动，增加了判断是否运动完成
@@ -472,18 +474,22 @@ class HSROBOT(object):
         strCmdID = "0"
         # 执行路点运动
         nRet = self.arm.HRIF_MoveL(0,0, d_tcp_pose, RawACSpoints, sTcpName, sUcsName, dVelocity, dAcc, dRadius,nIsSeek,nIOBit, nIOState, strCmdID)
+        print(nRet)
         result = []
         self.arm.waitMovementDone(0,0,result) # 等待运动完成
 
-        # # 等待运动完成
-        # while True:
-        #     #  判断机器人是否处于运动状态 
-        #     nRet = self.arm.HRIF_ReadRobotState(0,0,result)
-        #     if  result[0]=='0' and result[11]=='1': 
-        #         # print(result[0])
-        #         time.sleep(0.2)
-        #         break
-        #     time.sleep(0.2)
+        '''
+        # 等待运动完成
+        while True:
+            #  判断机器人是否处于运动状态 
+            nRet = self.arm.HRIF_ReadRobotState(0,0,result)
+            print(nRet)
+            if  result[0]=='0' and result[11]=='1': 
+                # print(result[0])
+                time.sleep(0.2)
+                break
+            time.sleep(0.2)
+        '''
 
 
     '''

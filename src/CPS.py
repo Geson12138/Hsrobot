@@ -1533,7 +1533,7 @@ class CPSClient(object):
     def HRIF_GetForwardKin(self,boxID,rbtID,rawACS,tcp,ucs,result):
         command = 'ACS2PCS,'
         command += str(rbtID) + ','
-        for i in range(0,5):
+        for i in range(0,6):
             command += str(rawACS[i]) + ','
         for i in range(0,6):
             command += str(tcp[i]) + ','

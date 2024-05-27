@@ -417,15 +417,15 @@ def admittance_controller():
 
     '''
     motion limitation parameters
-    '''
     #  设置最大关节速度 
-    nRet = hsrobot.arm.HRIF_SetJointMaxVel(0,0,[45,45,75,75,90,90]) # default/2 deg/s
+    nRet = hsrobot.arm.HRIF_SetJointMaxVel(0,0,[90,90,150,150,180,180]) # default/2 deg/s
     #  设置最大关节加速度 
-    nRet = hsrobot.arm.HRIF_SetJointMaxAcc(0,0,[180,180,180,180,180,180]) # default/2 deg/s^2
+    nRet = hsrobot.arm.HRIF_SetJointMaxAcc(0,0,[360,360,360,360,360,360]) # default/2 deg/s^2
     #  设置最大直线速度 
     nRet = hsrobot.arm.HRIF_SetLinearMaxVel(0,0,500) # mm/s
     #  设置最大直线加速度 
     nRet = hsrobot.arm.HRIF_SetLinearMaxAcc(0,0,2500) # mm/s^2
+    '''
 
     '''
     admittance control parameters
@@ -456,50 +456,60 @@ def admittance_controller():
 
     '''
     纠正位姿
+    d_joint_pos = np.array([1.621, 14.565, -137.064, 1.842, 61.622, -158.143])
+    hsrobot.move_j(d_joint_pos,10,sTcpName="TCP_grasp")
     '''
     r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
     r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
     r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
     d_tcp_ori = [180, 0, -90] # 纠正机器人姿态，先对齐
-    d_tcp_pos = [-720, 18, 551] # 保持当前位置不变
+    d_tcp_pos = [-716.0, -18.0, 282.0] # 保持当前位置不变
     d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori)))
     hsrobot.move_l(d_tcp_pose,10,sTcpName="TCP_grasp")
-
     start_time = time.time() - start_time
     t1 = time.time()
+    time.sleep(5)
 
    
-    #=================================== motion planning ( Assembly Strategy Based on ARIE )===================================#
-    
+    ##=================================== motion planning ( Assembly Strategy Based on ARIE )===================================##
 
     '''
     Step 1: 主动偏转轴的姿态 Rx=0 Ry=60 Rz=0, 构建吸引域
     '''
     
+    '''
+    '''
     r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
     r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
     r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
     r_toolPose = hsrobot.pose_robot(r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2],r_tcp_pos[0],r_tcp_pos[1],r_tcp_pos[2]) # print(r_toolPose)
-    deflect_toolPose = hsrobot.pose_robot(0, 50, 0, 0, 0, 0) # print(deflect_toolPose)
+    deflect_toolPose = hsrobot.pose_robot(0, 60, 0, 0, 0, 0) # print(deflect_toolPose)
     d_tcp_poseMatrix = r_toolPose @ deflect_toolPose # print(f'期望的末端位姿为: {d_tcp_poseMatrix}\n')
     d_tcp_ori = np.zeros(3)
     d_tcp_ori[0],d_tcp_ori[1],d_tcp_ori[2] = np.rad2deg(hsrobot.rotation_matrix_to_rpy(d_tcp_poseMatrix[0:3, 0],d_tcp_poseMatrix[0:3, 1],d_tcp_poseMatrix[0:3, 2]))
     d_tcp_pos = d_tcp_poseMatrix[0:3,3]
     d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori))) # print(f'期望的末端位姿为: {d_tcp_pose}\n')
     hsrobot.move_l(d_tcp_pose,10,sTcpName="TCP_grasp")
-    print(f'step1 done, 完成时间: {time.time()-t1}\n')
+
+    '''
+    d_joint_pos[5] = d_joint_pos[5] + 70
+    hsrobot.move_j(d_joint_pos,10,sTcpName="TCP_grasp")
+    print(f'step1 done, 完成时间: {time.time()-t1} s\n')
+    '''
 
 
     '''
-    Step 2: 沿着+X方向前进, 保持Y、Z方向放松
+    Step 2: 沿着竖直向上方向前进, 保持Y、Z方向放松
     '''
 
     ## 开启力控
 
-    hsrobot.arm.HRIF_SetMassParams(0,0,[13, 13, 13, 1, 1, 1]) # 设置惯量控制参数 
-    hsrobot.arm.HRIF_SetDampParams(0,0,[141, 141, 141, 0.5, 0.5, 0.5]) # 设置阻尼控制参数
+    '''
+    '''
+    hsrobot.arm.HRIF_SetMassParams(0,0,[10, 51, 51, 1.1, 1.1, 1.1]) # 设置惯量控制参数 
+    hsrobot.arm.HRIF_SetDampParams(0,0,[101, 501, 501, 0.5, 0.5, 0.5]) # 设置阻尼控制参数
     hsrobot.arm.HRIF_SetStiffParams(0,0,[51, 51, 51, 0.1, 0.1, 0.1]) # 设置刚度控制参数 *
-    hsrobot.arm.HRIF_SetForceZero(0,0)
+    # hsrobot.arm.HRIF_SetForceZero(0,0)
     Goal = [0, 0, 0, 0, 0, 0] 
     nRet = hsrobot.arm.HRIF_SetForceControlGoal(0,0,Goal) 
     freedom = [0, 1, 1, 0, 0, 0]
@@ -511,19 +521,31 @@ def admittance_controller():
 
     ## 到达吸引域最低点
 
-    tcp_feed_dis = np.array([50,0,0]) # 末端执行器的偏移距离
+    '''
+    tcp_feed_dis = np.array([35,0,0]) # 末端执行器的偏移距离
     r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
     r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
     r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
+    d_tcp_ori = r_tcp_ori
     rotMatrix = pykin_utils_transform.get_matrix_from_rpy(r_tcp_ori/180*np.pi)
     base_feed_dis = np.dot(rotMatrix, tcp_feed_dis)
     # print(f'base_feed_dis: {base_feed_dis}')
     d_tcp_pos = r_tcp_pos + base_feed_dis
-    d_tcp_ori = r_tcp_ori
     d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori)))
     hsrobot.move_l_timeblock(d_tcp_pose,5,sTcpName="TCP_grasp")
     time.sleep(4)
-    print(f'step2 done, 完成时间: {time.time()-t1}\n')
+    print(f'step2 done, 完成时间: {time.time()-t1} s\n')
+    '''
+    r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
+    r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
+    r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
+    d_tcp_ori = r_tcp_ori
+    base_feed_dis = np.array([0,0,20]) # 末端执行器的偏移距离
+    d_tcp_pos = r_tcp_pos + base_feed_dis
+    d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori)))
+    hsrobot.move_l_timeblock(d_tcp_pose,5,sTcpName="TCP_grasp")
+    time.sleep(4)
+    print(f'step2 done, 完成时间: {time.time()-t1} s\n')
     
 
     '''
@@ -531,26 +553,27 @@ def admittance_controller():
     '''
 
     ## 切换力控
-
+    '''
     hsrobot.arm.HRIF_SetForceControlState(0,0,0) # 先关力控
-    time.sleep(2)
-    hsrobot.arm.HRIF_SetMassParams(0,0,[13, 13, 13, 1, 1, 1]) # 设置惯量控制参数 
-    hsrobot.arm.HRIF_SetDampParams(0,0,[141, 141, 141, 0.8, 0.8, 0.8]) # 设置阻尼控制参数
+    time.sleep(1)
+    hsrobot.arm.HRIF_SetMassParams(0,0,[51, 51, 51, 1.1, 1.1, 1.1]) # 设置惯量控制参数 
+    hsrobot.arm.HRIF_SetDampParams(0,0,[501, 501, 501, 0.8, 2.1, 0.8]) # 设置阻尼控制参数
     hsrobot.arm.HRIF_SetStiffParams(0,0,[51, 51, 51, 0.1, 0.1, 0.1]) # 设置刚度控制参数 *
     hsrobot.arm.HRIF_SetForceControlGoal(0,0,[0, 0, 0, 0, 0, 0]) 
-    hsrobot.arm.HRIF_SetControlFreedom(0,0,[0, 0, 0, 0, 1, 0])
+    hsrobot.arm.HRIF_SetControlFreedom(0,0,[0, 0, 1, 0, 1, 0])
     hsrobot.arm.HRIF_SetForceControlStrategy(0,0,1)
     hsrobot.arm.HRIF_SetForceControlState(0,0,1) # 再开力控，避免振动
+    '''
 
     ## 偏转回来Ry姿态
-
+    '''
     r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
     r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
     r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
     r_toolPose = hsrobot.pose_robot(r_tcp_ori[0],r_tcp_ori[1],r_tcp_ori[2],r_tcp_pos[0],r_tcp_pos[1],r_tcp_pos[2]) # print(r_toolPose)
     transMatrix_top2tcp = hsrobot.pose_robot(0, 0, 0, 52, 0, 0) # print(transMatrix_top2tcp)
-    transMatrix_top2tcp2 = hsrobot.pose_robot(0, 0, 0, -52, 0, 0)
-    deflect_toolPose = hsrobot.pose_robot(0, -20, 0, 0, 0, 0) # print(deflect_toolPose)
+    transMatrix_top2tcp2 = hsrobot.pose_robot(0, 0, 0, -50, 0, 0) # 前进2mm
+    deflect_toolPose = hsrobot.pose_robot(0, -35, 0, 0, 0, 0) # print(deflect_toolPose)
     d_tcp_poseMatrix = r_toolPose @ transMatrix_top2tcp @ deflect_toolPose @ transMatrix_top2tcp2 # print(f'期望的末端位姿为: {d_tcp_poseMatrix}\n')
     d_tcp_ori = np.zeros(3)
     d_tcp_ori[0],d_tcp_ori[1],d_tcp_ori[2] = np.rad2deg(hsrobot.rotation_matrix_to_rpy(d_tcp_poseMatrix[0:3, 0],d_tcp_poseMatrix[0:3, 1],d_tcp_poseMatrix[0:3, 2]))
@@ -559,49 +582,50 @@ def admittance_controller():
     hsrobot.move_l_timeblock(d_tcp_pose,5,sTcpName="TCP_grasp")
     time.sleep(4)
     print(f'Step3 done, 完成时间: {time.time()-t1}\n')
-
-
     '''
-    Step 4: 继续施加作用力, 完成装配
-    '''
-    ## 切换力控
 
-    hsrobot.arm.HRIF_SetForceControlState(0,0,0) # 先关力控
-    time.sleep(2)
-    hsrobot.arm.HRIF_SetMassParams(0,0,[30, 13, 13, 1, 1, 1]) # 设置惯量控制参数 
-    hsrobot.arm.HRIF_SetDampParams(0,0,[141, 141, 141, 0.8, 0.8, 0.8]) # 设置阻尼控制参数
-    hsrobot.arm.HRIF_SetStiffParams(0,0,[51, 51, 51, 0.1, 0.1, 0.1]) # 设置刚度控制参数 *
-    hsrobot.arm.HRIF_SetForceControlGoal(0,0,[10, 0, 0, 0, 0, 0]) 
-    hsrobot.arm.HRIF_SetControlFreedom(0,0,[1, 0, 0, 0, 0, 0])
-    hsrobot.arm.HRIF_SetForceControlStrategy(0,0,1)
-    hsrobot.arm.HRIF_SetForceControlState(0,0,1) # 再开力控，避免振动
 
-    ## 前进插入
+    # '''
+    # Step 4: 继续施加作用力, 完成装配
+    # '''
+    # ## 切换力控
 
-    tcp_feed_dis = np.array([60,0,0]) # 末端执行器的偏移距离
-    r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
-    r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
-    r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
-    rotMatrix = pykin_utils_transform.get_matrix_from_rpy(r_tcp_ori/180*np.pi)
-    base_feed_dis = np.dot(rotMatrix, tcp_feed_dis)
-    # print(f'base_feed_dis: {base_feed_dis}')
-    d_tcp_pos = r_tcp_pos + base_feed_dis
-    d_tcp_ori = r_tcp_ori
-    d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori)))
-    hsrobot.move_l_timeblock(d_tcp_pose,5,sTcpName="TCP_grasp")
-    time.sleep(4)
-    print(f'step4 done, 完成时间: {time.time()-t1}\n')
+    # hsrobot.arm.HRIF_SetForceControlState(0,0,0) # 先关力控
+    # time.sleep(2)
+    # hsrobot.arm.HRIF_SetMassParams(0,0,[25, 25, 25, 1.1, 1.1, 1.1]) # 设置惯量控制参数 
+    # hsrobot.arm.HRIF_SetDampParams(0,0,[251, 251, 251, 1.8, 1.8, 1.8]) # 设置阻尼控制参数
+    # hsrobot.arm.HRIF_SetStiffParams(0,0,[51, 51, 51, 0.1, 0.1, 0.1]) # 设置刚度控制参数 *
+    # hsrobot.arm.HRIF_SetForceControlGoal(0,0,[10, 0, 0, 0, 0, 0]) 
+    # hsrobot.arm.HRIF_SetControlFreedom(0,0,[0, 0, 0, 1, 1, 1])
+    # hsrobot.arm.HRIF_SetForceControlStrategy(0,0,1)
+    # hsrobot.arm.HRIF_SetForceControlState(0,0,1) # 再开力控，避免振动
+
+    # ## 前进插入
+
+    # tcp_feed_dis = np.array([30,0,0]) # 末端执行器的偏移距离
+    # r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
+    # r_tcp_pos = np.array([float(i) for i in r_poselist[6:9]])
+    # r_tcp_ori = np.array([float(i) for i in r_poselist[9:12]])
+    # rotMatrix = pykin_utils_transform.get_matrix_from_rpy(r_tcp_ori/180*np.pi)
+    # base_feed_dis = np.dot(rotMatrix, tcp_feed_dis)
+    # # print(f'base_feed_dis: {base_feed_dis}')
+    # d_tcp_pos = r_tcp_pos + base_feed_dis
+    # d_tcp_ori = r_tcp_ori
+    # d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori)))
+    # hsrobot.move_l_timeblock(d_tcp_pose,5,sTcpName="TCP_grasp")
+    # time.sleep(4)
+    # print(f'step4 done, 完成时间: {time.time()-t1}\n')
     
 
     '''
     关闭力控
     '''
+
+    '''
+    '''
     hsrobot.arm.HRIF_SetForceControlState(0,0,0)
     global keyboard_interrupt
     keyboard_interrupt = True
-
-
-
 
 
 '''
@@ -609,6 +633,7 @@ def admittance_controller():
 '''
 def test_motion():
 
+    '''
     # get_current_pose
     r_poselist = []; hsrobot.arm.HRIF_ReadActPos(0,0, r_poselist)
     # 读取实际笛卡尔空间位置变量
@@ -620,6 +645,13 @@ def test_motion():
     d_tcp_pose = np.concatenate((np.array(d_tcp_pos), np.array(d_tcp_ori)))
     # print(f'期望的末端位姿为: {d_tcp_pose}\n')
     hsrobot.move_l(d_tcp_pose,5,sTcpName="TCP_grasp")
+    '''
+    d_joint_pos = np.array([1.643, 14.147, -137.665, 1.864, 61.824, -157.881]) # 保持当前关节位置不变
+    hsrobot.move_j(d_joint_pos,10,sTcpName="TCP_grasp")
+
+    time.sleep(2)
+    d_joint_pos[5] = d_joint_pos[5] + 70
+    hsrobot.move_j(d_joint_pos,10,sTcpName="TCP_grasp")
 
 
 '''
@@ -644,23 +676,23 @@ def force_control():
     force_control_thread.start()
     time.sleep(1)
 
+    '''
+    '''
     read_and_save_force_data_thread = threading.Thread(target=read_and_save_force_data)
     read_and_save_force_data_thread.start()
     time.sleep(0.2)
-
     read_and_save_pose_data_thread = threading.Thread(target=read_and_save_pose_data)
     read_and_save_pose_data_thread.start()
     time.sleep(0.2)
-
 
     check_keyboard_thread = threading.Thread(target=check_keyboard)
     check_keyboard_thread.start()
     time.sleep(0.2)
 
-
+    '''
+    '''
     while not keyboard_interrupt:
         time.sleep(0.1)
-
     time.sleep(5)
     plot_force_data() # 绘制力传感数据
     plot_pose_data() # 绘制位姿数据
@@ -696,13 +728,29 @@ if __name__ == '__main__' :
     start_time = time.time()
 
     force_control()
+    # test_motion()
 
     # clear_deques()
     # read_and_plot_sensor_data()
-    # test_motion()
     # admittance_controller()
 
     # plot_force_data() # 绘制力传感数据
+
+
+    # #  定义返回值空列表 
+    # result = [ ] 
+    # #  读取错误码 
+    # nRet = hsrobot.arm.HRIF_ReadTCPByName(0,0, result)
+    # print(result)
+  
+    # #  设置最大关节速度 
+    # nRet = hsrobot.arm.HRIF_SetJointMaxVel(0,0,[90,90,150,150,180,180]) # default/2 deg/s
+    # #  设置最大关节加速度 
+    # nRet = hsrobot.arm.HRIF_SetJointMaxAcc(0,0,[180,180,180,180,180,180]) # default/2 deg/s^2
+    # #  设置最大直线速度 
+    # nRet = hsrobot.arm.HRIF_SetLinearMaxVel(0,0,500) # mm/s
+    # #  设置最大直线加速度 
+    # nRet = hsrobot.arm.HRIF_SetLinearMaxAcc(0,0,2500) # mm/s^2
 
 
 
