@@ -33,7 +33,7 @@ class HSROBOT(object):
 
     def __init__(self):
         #------------------------------------开始连接-------------------------------------
-        # print('准备工作开始, 连接robot')
+        print('开始连接robot')
         # 设置机器人的IP 和端口号，注意本机IPv4设置需要和机器人IP在同一个网段
         IP = '192.168.31.102'
         nPort = 10003
@@ -42,7 +42,7 @@ class HSROBOT(object):
         # 连接机器人的服务器
         nRet = self.arm.HRIF_Connect(0,IP,nPort)
         # 检测控制器是否连接
-        nRet = self.arm.HRIF_IsConnected(0)
+        result = []; nRet = self.arm.HRIF_IsConnected(0,result)
         print(f'Connecting to Robot Controller: {nRet}')
         # 相机相对于tcp(第五个关节)的变换矩阵,运行calib/calibration.py得到
         # self.trans_cam2wrist = np.array([[ 4.79173933e-02, -9.93733916e-01,  1.00979344e-01,  6.89458508e+01],
@@ -440,10 +440,10 @@ class HSROBOT(object):
         # 定义路点 ID: 当前路点 ID，可以自定义，也可以按顺序设置为"1"，"2"，"3"
         stdCmdID = "0"
         nRet = self.arm.HRIF_MoveJ(0,0,tcp_pose,joint_pos,sTcpName,sUcsName,dVelocity,dAcc,dRadius,nIsUseJoint, nIsSeek, nIOBit, nIOState, stdCmdID)
-        print(nRet)
+        # print(nRet)
         result = []
         nRet = self.arm.waitMovementDone(0,0,result) # 等待运动完成
-        print(nRet)
+        print(f'错误码:{nRet}')
 
     '''
     Function: 机器人笛卡尔空间直线运动，增加了判断是否运动完成
@@ -474,9 +474,10 @@ class HSROBOT(object):
         strCmdID = "0"
         # 执行路点运动
         nRet = self.arm.HRIF_MoveL(0,0, d_tcp_pose, RawACSpoints, sTcpName, sUcsName, dVelocity, dAcc, dRadius,nIsSeek,nIOBit, nIOState, strCmdID)
-        print(nRet)
+        # print(nRet)
         result = []
-        self.arm.waitMovementDone(0,0,result) # 等待运动完成
+        nRet = self.arm.waitMovementDone(0,0,result) # 等待运动完成
+        print(f'错误码:{nRet}')
 
         '''
         # 等待运动完成
@@ -521,7 +522,7 @@ class HSROBOT(object):
         strCmdID = "0"
         # 执行路点运动
         nRet = self.arm.HRIF_MoveL(0,0, d_tcp_pose, RawACSpoints, sTcpName, sUcsName, dVelocity, dAcc, dRadius,nIsSeek,nIOBit, nIOState, strCmdID)
-
+        print(f'错误码:{nRet}')
 
     '''
     Function: 机器人笛卡尔空间圆弧轨迹运动，增加了判断是否运动完成
@@ -551,7 +552,55 @@ class HSROBOT(object):
         # 定义路点 ID
         strCmdID = "0"
         # 执行路点运动
-        self.arm.HRIF_MoveC(0,0,dStartPoint , dAuxPoint, dEndPoint,
+        nRet = self.arm.HRIF_MoveC(0,0,dStartPoint , dAuxPoint, dEndPoint,
                                    nFixedPosure, nMoveCType, dRadLen, dVelocity, dAcc, dRadius,sTcpName , sUcsName, strCmdID)
+        print(f'错误码:{nRet}')
         result = []
         self.arm.waitMovementDone(0,0,result) # 等待运动完成
+
+    '''
+    Function: 路点运动, HRIF_WayPoint2 支持直线与圆弧过渡不减速功能
+    Input: 路点运动的目标位姿, 路点运动的速度, 工具坐标系
+        nMoveType = 0 # 定义运动类型, 0: 关节运动, 1：直线运动, 2：圆弧运动
+        nIsUseJoint= 0 # 定义是否使用关节角度,不使用，用空间坐标位置求逆解 
+        d_tcp_pose: # 定义空间目标位置, nMoveType=0 并 nIsUseJoint=1：无效, nMoveType=0 并 nIsUseJoint=0：用此空间坐标逆解得到关节坐标, nMoveType=1：目标空间位置
+        d_joint_pos: 定义关节目标位置, nMoveType=0 并 nIsUseJoint=1：此关节坐标为目标关节坐标, nMoveType=0 并 nIsUseJoint=0：此关节坐标仅作为计算逆解时选解的参考关节坐标, nMoveType=1：无效, nMoveType=2：无效
+    Output: None
+    '''
+    def move_waypoint(self,nMoveType,nIsUseJoint,d_tcp_pose,d_joint_pos,vel,sTcpName = "TCP"):
+        
+        # -------------------------------预定义参数--------------------------------    
+        self.arm.HRIF_SetOverride(0,0,vel/100) # 设置速度
+        # 定义空间目标位置,nMoveType=0：无效,nMoveType=1：无效,nMoveType=2：做为圆弧的经过位置
+        AuxPos = [0, 0, 0, 0, 0, 0]
+        # 定义用户坐标变量
+        sUcsName = "Base"
+        # 定义运动速度
+        dVelocity = 50
+        # 定义运动加速度
+        dAcc = 50
+        # 定义过渡半径
+        dRadius = 50
+        # 定义是否使用检测 DI 停止
+        nIsSeek = 0
+        # 定义检测的 DI 索引
+        nIOBit = 0
+        # 定义检测的 DI 状态
+        nIOState = 0
+        # 定义路点 ID
+        strCmdID = "0"
+        # 执行路点运动
+        # nRet = self.arm.HRIF_WayPoint2(0,0,d_tcp_pose, AuxPos, d_joint_pos, sTcpName , sUcsName, dVelocity,
+        # dAcc, dRadius,nMoveType, nIsUseJoint, nIsSeek, nIOBit, nIOState, strCmdID)
+        nRet = self.arm.HRIF_WayPoint(0,0,nMoveType,d_tcp_pose,d_joint_pos,sTcpName,sUcsName,dVelocity,dAcc,dRadius,nIsUseJoint,nIsSeek,nIOBit,nIOState,strCmdID)
+        print(f'错误码:{nRet}')
+        # # 定义返回值空列表
+        # result = [ ]
+        # while True:
+        #     # 等待运动完成
+        #     nRet = self.arm.HRIF_IsBlendingDone(0,0,result)
+        #     if result[0]:
+        #         break
+        #     time.sleep
+        self.arm.waitMoveDone(0,0)
+            
